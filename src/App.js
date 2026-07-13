@@ -18,6 +18,7 @@ import BookDetailPage from './pages/BookDetailPage';
 import CategoryPage from './pages/CategoryPage';
 import FavoritePage from './pages/FavoritePage';
 import Footer from './components/Footer';
+import AgentAssistant from './components/AgentAssistant';
 
 function HomePage() {
   return (
@@ -51,6 +52,7 @@ function App() {
                   <Route path="/favorites" element={<FavoritePage />} />
                 </Routes>
                 <Footer />
+                <AgentAssistant />
               </div>
             </Router>
           </FavoriteProvider>
