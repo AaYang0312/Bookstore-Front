@@ -32,7 +32,7 @@ const AgentAssistant = () => {
       await sendMessage({
         message: content,
         conversationId,
-        history: nextHistory,
+        history: messages,
         onText: (delta) => setMessages((current) => current.map((item) =>
           item.id === assistantId ? { ...item, content: item.content + delta } : item
         )),
@@ -45,7 +45,10 @@ const AgentAssistant = () => {
         }
       });
     } catch (error) {
-      if (error.name === 'AbortError') return;
+      if (error.name === 'AbortError') {
+        setMessages((current) => current.filter((item) => item.id !== assistantId));
+        return;
+      }
       setMessages((current) => current.map((item) => item.id === assistantId
         ? { ...item, error: true, content: error.message || '连接失败，请稍后再试。' }
         : item));

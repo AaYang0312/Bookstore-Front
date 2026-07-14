@@ -3,6 +3,15 @@ import { useCallback, useRef, useState } from 'react';
 const AGENT_API_URL = process.env.REACT_APP_AGENT_API_URL
   || 'http://localhost:8080/api/v1/agent/chat';
 
+const getValidationDetail = (payload) => {
+  if (!Array.isArray(payload?.detail)) return '';
+
+  return payload.detail.map((item) => {
+    const field = Array.isArray(item.loc) ? item.loc.slice(1).join('.') : '';
+    return field ? `${field}：${item.msg}` : item.msg;
+  }).filter(Boolean).join('；');
+};
+
 const readStream = async (response, onText, onData) => {
   const reader = response.body?.getReader();
   if (!reader) return;
@@ -59,11 +68,31 @@ export default function useAgentStream() {
         body: JSON.stringify({
           message,
           conversation_id: conversationId,
-          history: history.slice(-10).map(({ role, content }) => ({ role, content }))
+          history: history
+            .filter(({ role, content, error }) => (
+              !error
+              && (role === 'user' || role === 'assistant')
+              && typeof content === 'string'
+              && content.trim().length > 0
+            ))
+            .slice(-10)
+            .map(({ role, content }) => ({ role, content }))
         })
       });
 
       if (!response.ok) {
+        let errorPayload = null;
+        try {
+          errorPayload = await response.json();
+        } catch {
+          // 错误响应不一定是 JSON，继续使用状态码生成提示。
+        }
+
+        if (response.status === 422) {
+          const detail = getValidationDetail(errorPayload);
+          throw new Error(detail ? `请求内容校验失败：${detail}` : '请求内容校验失败');
+        }
+
         throw new Error(response.status === 404
           ? 'Agent 服务尚未启用'
           : `Agent 服务暂时不可用（${response.status}）`);
