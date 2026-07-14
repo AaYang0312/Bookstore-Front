@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useUser } from '../contexts/UserContext';
@@ -6,8 +6,12 @@ import './CartPage.css';
 
 const CartPage = () => {
   const navigate = useNavigate();
-  const { items, removeFromCart, updateQuantity, getTotalItems, getTotalPrice } = useCart();
+  const { items, removeFromCart, updateQuantity, clearCart, getTotalItems, getTotalPrice } = useCart();
   const { user } = useUser();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  const checkoutInFlightRef = useRef(false);
+  const idempotencyKeyRef = useRef(null);
 
   // 缓存默认图片URL，避免重复请求
   const defaultImageUrl = useMemo(() => 'https://via.placeholder.com/80x80/4A90E2/FFFFFF?text=📚', []);
@@ -21,6 +25,54 @@ const CartPage = () => {
   };
 
   const totalPrice = getTotalPrice();
+
+  const handleCheckout = async () => {
+    if (!user) {
+      alert('请先登录');
+      return;
+    }
+    if (checkoutInFlightRef.current || items.length === 0) return;
+
+    checkoutInFlightRef.current = true;
+    setCheckoutLoading(true);
+    setCheckoutError('');
+
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = window.crypto.randomUUID();
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8080/api/v1/order/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          idempotency_key: idempotencyKeyRef.current,
+          items: items.map(item => ({
+            book_id: item.id,
+            quantity: item.quantity,
+            price: item.currentPrice
+          }))
+        })
+      });
+
+      const data = await response.json();
+      if (data.code !== 0) {
+        throw new Error(data.message || '创建订单失败');
+      }
+
+      clearCart();
+      navigate(`/payment/${data.data.id}`);
+    } catch (error) {
+      setCheckoutError(error.message || '创建订单失败，请稍后重试');
+    } finally {
+      checkoutInFlightRef.current = false;
+      setCheckoutLoading(false);
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -139,16 +191,12 @@ const CartPage = () => {
             </div>
             <button 
               className="checkout-btn"
-              onClick={() => {
-                if (!user) {
-                  alert('请先登录');
-                  return;
-                }
-                navigate('/payment', { state: { cartItems: items } });
-              }}
+              onClick={handleCheckout}
+              disabled={checkoutLoading}
             >
-              去结算 ({getTotalItems()}件)
+              {checkoutLoading ? '正在创建订单...' : `去结算 (${getTotalItems()}件)`}
             </button>
+            {checkoutError && <p className="error-message">{checkoutError}</p>}
             <p className="summary-note">
               已选择{items.length}件商品,总计{getTotalItems()}本
             </p>

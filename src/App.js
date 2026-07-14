@@ -42,7 +42,6 @@ function App() {
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/cart" element={<CartPage />} />
-                          <Route path="/payment" element={<PaymentPage />} />
         <Route path="/payment/:orderId" element={<PaymentPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/orders" element={<OrderHistoryPage />} />

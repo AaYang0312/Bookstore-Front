@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
-import { useCart } from '../contexts/CartContext';
 import './PaymentPage.css';
 
 const PaymentPage = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useUser();
-  const { clearCart, items } = useCart();
   
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('alipay');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const paymentInFlightRef = useRef(false);
 
   useEffect(() => {
     if (!user) {
@@ -23,83 +22,39 @@ const PaymentPage = () => {
       return;
     }
 
-    // 如果有订单ID，获取订单信息
-    if (orderId) {
-      fetchOrderDetails();
-    } else {
-      // 从购物车创建订单
-      createOrderFromCart();
+    if (!orderId) {
+      setError('缺少订单ID，请从购物车重新结算');
+      setLoading(false);
+      return;
     }
-  }, [orderId, user]);
 
-  const fetchOrderDetails = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/api/v1/order/${orderId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+    const fetchOrderDetails = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:8080/api/v1/order/${orderId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.code === 0) {
+          setOrder(data.data);
+        } else {
+          setError(data.message);
         }
-      });
-      
-      const data = await response.json();
-      if (data.code === 0) {
-        setOrder(data.data);
-      } else {
-        setError(data.message);
-      }
-    } catch (err) {
-      setError('获取订单信息失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createOrderFromCart = async () => {
-    try {
-      // 从购物车上下文获取商品，而不是从location.state
-      const cartItems = items || [];
-      
-      if (cartItems.length === 0) {
-        setError('购物车为空');
+      } catch (err) {
+        setError('获取订单信息失败');
+      } finally {
         setLoading(false);
-        return;
       }
+    };
 
-      const orderItems = cartItems.map(item => ({
-        book_id: item.id,
-        quantity: item.quantity,
-        price: item.currentPrice // currentPrice现在是元单位
-      }));
-
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/v1/order/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          items: orderItems
-        })
-      });
-
-      const data = await response.json();
-      if (data.code === 0) {
-        setOrder(data.data);
-        // 清空购物车
-        clearCart();
-      } else {
-        setError(data.message);
-      }
-    } catch (err) {
-      setError('创建订单失败');
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchOrderDetails();
+  }, [orderId, user, navigate]);
 
   const handlePayment = async () => {
-    if (!order) return;
+    if (!order || paymentInFlightRef.current) return;
+
+    paymentInFlightRef.current = true;
+    setPaymentLoading(true);
 
     try {
       const token = localStorage.getItem('token');
@@ -122,6 +77,9 @@ const PaymentPage = () => {
       }
     } catch (err) {
       setError('支付失败');
+    } finally {
+      paymentInFlightRef.current = false;
+      setPaymentLoading(false);
     }
   };
 
@@ -237,8 +195,8 @@ const PaymentPage = () => {
             <button onClick={() => navigate('/cart')} className="cancel-btn">
               取消支付
             </button>
-            <button onClick={handlePayment} className="pay-btn">
-              立即支付 ¥{order.total_amount}
+            <button onClick={handlePayment} className="pay-btn" disabled={paymentLoading || order.is_paid}>
+              {order.is_paid ? '订单已支付' : paymentLoading ? '支付处理中...' : `立即支付 ¥${order.total_amount}`}
             </button>
           </div>
         </div>

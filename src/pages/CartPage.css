@@ -239,6 +239,11 @@
   background-color: #40a9ff;
 }
 
+.checkout-btn:disabled {
+  background-color: #91caff;
+  cursor: not-allowed;
+}
+
 .summary-note {
   font-size: 12px;
   color: #999;

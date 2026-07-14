@@ -206,6 +206,13 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
+.pay-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* 支付成功弹窗 */
 .success-modal {
   position: fixed;
