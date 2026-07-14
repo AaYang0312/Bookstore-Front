@@ -12,6 +12,7 @@ const SearchPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalBooks, setTotalBooks] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -34,7 +35,8 @@ const SearchPage = () => {
 
       if (data.code === 0) {
         setBooks(data.data.books || []);
-        setTotalPages(data.data.total_page || 1);
+        setTotalBooks(data.data.total || 0);
+        setTotalPages(data.data.total_pages || 1);
       } else {
         setError(data.message || '搜索失败');
       }
@@ -82,7 +84,7 @@ const SearchPage = () => {
             <p className="search-query">关键词："{query}"</p>
             {!loading && (
               <p className="search-count">
-                找到 {books.length} 本相关图书
+                找到 {totalBooks} 本相关图书
                 {totalPages > 1 && `，共 ${totalPages} 页`}
               </p>
             )}

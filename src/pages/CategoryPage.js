@@ -12,6 +12,7 @@ const CategoryPage = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalBooks, setTotalBooks] = useState(0);
 
   const fetchCategoryBooks = useCallback(async () => {
     try {
@@ -19,8 +20,9 @@ const CategoryPage = () => {
       const data = await response.json();
       
       if (data.code === 0) {
-        setBooks(data.data || []);
-        setTotalPages(Math.ceil((data.data?.length || 0) / 12));
+        setBooks(data.data.books || []);
+        setTotalBooks(data.data.total || 0);
+        setTotalPages(data.data.total_pages || 1);
       } else {
         setError('获取分类书籍失败');
       }
@@ -90,7 +92,7 @@ const CategoryPage = () => {
             <p className="category-description">
               发现更多精彩的{category}类图书
             </p>
-            <p className="category-count">共 {books.length} 本图书</p>
+            <p className="category-count">共 {totalBooks} 本图书</p>
           </div>
         </div>
       </div>

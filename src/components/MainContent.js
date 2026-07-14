@@ -24,8 +24,8 @@ const MainContent = () => {
       const data = await response.json();
       
       if (data.code === 0) {
-        setBooks(data.data.books);
-        setTotalPages(data.data.total_page);
+        setBooks(data.data.books || []);
+        setTotalPages(data.data.total_pages || 1);
       } else {
         setError('获取书籍列表失败');
       }
