@@ -1,5 +1,6 @@
 import React from 'react';
 import BookRecommendationCard from './BookRecommendationCard';
+import AgentMarkdown from './AgentMarkdown';
 
 const AgentMessage = ({ message, onOpenBook, onAddToCart }) => {
   const isUser = message.role === 'user';
@@ -15,7 +16,9 @@ const AgentMessage = ({ message, onOpenBook, onAddToCart }) => {
       <div className="agent-message-content">
         {message.content && (
           <div className={`agent-bubble ${message.error ? 'is-error' : ''}`}>
-            {message.content}
+            {isUser || message.error
+              ? message.content
+              : <AgentMarkdown>{message.content}</AgentMarkdown>}
           </div>
         )}
         {hasBooks && (
