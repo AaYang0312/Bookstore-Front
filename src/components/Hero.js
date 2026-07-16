@@ -183,10 +183,10 @@ const Hero = () => {
         </div>
 
         {/* 导航按钮 */}
-        <button className="hero-nav prev" onClick={goToPrevSlide}>
+        <button className="hero-nav prev" onClick={goToPrevSlide} aria-label="上一张轮播图">
           ‹
         </button>
-        <button className="hero-nav next" onClick={goToNextSlide}>
+        <button className="hero-nav next" onClick={goToNextSlide} aria-label="下一张轮播图">
           ›
         </button>
 
@@ -197,6 +197,8 @@ const Hero = () => {
               key={index}
               className={`hero-indicator ${index === currentSlide ? 'active' : ''}`}
               onClick={() => goToSlide(index)}
+              aria-label={`切换到第 ${index + 1} 张轮播图`}
+              aria-current={index === currentSlide ? 'true' : undefined}
             />
           ))}
         </div>
@@ -205,4 +207,4 @@ const Hero = () => {
   );
 };
 
-export default Hero; 
+export default Hero;
