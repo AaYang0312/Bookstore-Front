@@ -70,7 +70,7 @@ export const UserProvider = ({ children }) => {
       if (data.code === 0) {
         localStorage.setItem('token', data.data.access_token);
         // 立即设置用户信息，确保UI立即更新
-        setUser(data.data.user);
+        setUser(data.data.user_info || data.data.user || null);
         return { success: true };
       } else {
         return { success: false, message: data.message };
@@ -174,4 +174,4 @@ export const UserProvider = ({ children }) => {
       {children}
     </UserContext.Provider>
   );
-}; 
+};
