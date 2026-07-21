@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import adminApi from '../services/adminApi';
-import { DemoNotice, EmptyState, LoadingState, PageHeading, SearchField, StatusBadge, Table, formatDate } from '../components/AdminUI';
+import { DemoNotice, EmptyState, ErrorState, LoadingState, PageHeading, SearchField, StatusBadge, Table, formatDate } from '../components/AdminUI';
 
 const UserManagePage = () => {
   const [keyword, setKeyword] = useState('');
-  const [state, setState] = useState({ loading: true, rows: [], isDemo: false, warning: '' });
+  const [state, setState] = useState({ loading: true, rows: [], isDemo: false, warning: '', error: '' });
   useEffect(() => {
     setState((current) => ({ ...current, loading: true }));
-    adminApi.users({ keyword }).then((result) => setState({ loading: false, rows: result.data, isDemo: result.isDemo, warning: result.warning || '' }));
+    adminApi.users({ keyword })
+      .then((result) => setState({ loading: false, rows: result.data, isDemo: result.isDemo, warning: result.warning || '', error: '' }))
+      .catch((error) => setState({ loading: false, rows: [], isDemo: false, warning: '', error: error.message }));
   }, [keyword]);
   const toggleRole = async (row) => {
-    const result = await adminApi.setUserAdmin(row.id, !row.is_admin);
-    setState((current) => ({ ...current, isDemo: current.isDemo || result.isDemo, rows: current.rows.map((item) => item.id === row.id ? { ...item, ...result.data } : item) }));
+    try {
+      const result = await adminApi.setUserAdmin(row.id, !row.is_admin);
+      setState((current) => ({ ...current, error: '', isDemo: current.isDemo || result.isDemo, rows: current.rows.map((item) => item.id === row.id ? { ...item, ...result.data } : item) }));
+    } catch (error) {
+      setState((current) => ({ ...current, error: error.message }));
+    }
   };
   const columns = [
     { key: 'username', label: '用户', render: (row) => <div className="admin-book-cell"><span className="admin-account-avatar">{(row.username || '用').slice(0, 1).toUpperCase()}</span><div className="admin-cell-primary"><strong>{row.username}</strong><small>用户 ID：{row.id}</small></div></div> },
@@ -25,7 +31,7 @@ const UserManagePage = () => {
     <PageHeading eyebrow="Customers" title="用户管理" description="查看注册用户并分配后台管理员角色。" />
     <DemoNotice show={state.isDemo} message={state.warning} />
     <div className="admin-toolbar"><SearchField value={keyword} onChange={setKeyword} placeholder="搜索用户名、邮箱或手机号"/></div>
-    <section className="admin-panel">{state.loading ? <LoadingState /> : state.rows.length ? <Table columns={columns} rows={state.rows} /> : <EmptyState title="没有找到用户" />}</section>
+    <section className="admin-panel">{state.loading ? <LoadingState /> : state.error ? <ErrorState message={state.error} /> : state.rows.length ? <Table columns={columns} rows={state.rows} /> : <EmptyState title="没有找到用户" />}</section>
   </div>;
 };
 

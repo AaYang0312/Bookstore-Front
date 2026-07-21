@@ -218,7 +218,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
         
         <div className="auth-modal-header">
           <div className="auth-logo">
-            <div className="auth-logo-icon"></div>
+            <div className="auth-logo-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4.5 5.25h3.75A3.75 3.75 0 0 1 12 9v9.75A3.75 3.75 0 0 0 8.25 15H4.5V5.25Z" />
+                <path d="M19.5 5.25h-3.75A3.75 3.75 0 0 0 12 9v9.75A3.75 3.75 0 0 1 15.75 15h3.75V5.25Z" />
+              </svg>
+            </div>
             <span className="auth-logo-text">博学书城</span>
           </div>
           <h2 className="auth-title">
@@ -379,4 +384,4 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   );
 };
 
-export default AuthModal; 
+export default AuthModal;

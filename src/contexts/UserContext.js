@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const UserContext = createContext();
+const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
 
 export const useUser = () => {
   const context = useContext(UserContext);
@@ -22,7 +23,7 @@ export const UserProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/user/profile', {
+      const response = await fetch(`${API_BASE}/user/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -52,7 +53,7 @@ export const UserProvider = ({ children }) => {
 
   const login = async (username, password, captchaData) => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/user/login', {
+      const response = await fetch(`${API_BASE}/user/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +83,7 @@ export const UserProvider = ({ children }) => {
 
   const register = async (username, password, email, phone, confirmPassword, captchaData) => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/user/register', {
+      const response = await fetch(`${API_BASE}/user/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ export const UserProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        await fetch('http://localhost:8080/api/v1/user/logout', {
+        await fetch(`${API_BASE}/user/logout`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -136,7 +137,7 @@ export const UserProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/user/profile', {
+      const response = await fetch(`${API_BASE}/user/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

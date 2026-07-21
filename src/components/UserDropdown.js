@@ -35,15 +35,22 @@ const UserDropdown = ({ user, onLogout, onClose }) => {
         </div>
         
         <div className="dropdown-menu">
+          {user.is_admin && (
+            <Link to="/admin" className="dropdown-item admin-dropdown-item" onClick={onClose}>
+              <span className="dropdown-icon">▦</span>
+              管理后台
+              <span className="dropdown-role-badge">ADMIN</span>
+            </Link>
+          )}
           <button className="dropdown-item" onClick={handleProfileClick}>
             <span className="dropdown-icon">👤</span>
             个人信息
           </button>
-          <Link to="/orders" className="dropdown-item">
+          <Link to="/orders" className="dropdown-item" onClick={onClose}>
             <span className="dropdown-icon">📋</span>
             我的订单
           </Link>
-          <Link to="/favorites" className="dropdown-item">
+          <Link to="/favorites" className="dropdown-item" onClick={onClose}>
             <span className="dropdown-icon">❤️</span>
             我的收藏
           </Link>
@@ -180,4 +187,4 @@ const ProfileModal = ({ user, onClose }) => {
   );
 };
 
-export default UserDropdown; 
+export default UserDropdown;

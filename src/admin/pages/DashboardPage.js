@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import adminApi from '../services/adminApi';
-import { DemoNotice, LoadingState, PageHeading, StatusBadge, Table, formatDate, formatMoney } from '../components/AdminUI';
+import { DemoNotice, ErrorState, LoadingState, PageHeading, StatusBadge, Table, formatDate, formatMoney } from '../components/AdminUI';
 
 const dayLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '今天'];
 
@@ -15,6 +15,7 @@ const DashboardPage = () => {
   }, []);
 
   if (state.loading) return <div className="admin-page"><LoadingState /></div>;
+  if (!state.data) return <div className="admin-page"><PageHeading eyebrow="Overview" title="管理概览" description="书城运营数据中心。" /><section className="admin-panel"><ErrorState message={state.warning} /></section></div>;
   const data = state.data || {};
   const status = (value) => ({ 0: ['warning', '待支付'], 1: ['success', '已支付'], 2: ['neutral', '已取消'] }[value] || ['neutral', '未知']);
   const orderColumns = [

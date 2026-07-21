@@ -51,6 +51,10 @@ export const EmptyState = ({ title = '暂无数据', description = '调整筛选
   <div className="admin-state admin-empty-state"><div>⌁</div><h3>{title}</h3><p>{description}</p></div>
 );
 
+export const ErrorState = ({ message = '管理接口暂时不可用，请稍后重试。' }) => (
+  <div className="admin-state admin-empty-state"><div>!</div><h3>数据加载失败</h3><p>{message}</p></div>
+);
+
 export const Table = ({ columns, rows, rowKey = 'id' }) => (
   <div className="admin-table-scroll">
     <table className="admin-table">

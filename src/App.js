@@ -18,6 +18,7 @@ import CategoryPage from './pages/CategoryPage';
 import FavoritePage from './pages/FavoritePage';
 import StoreLayout from './layouts/StoreLayout';
 import AdminLayout from './admin/layout/AdminLayout';
+import AdminGuard from './admin/components/AdminGuard';
 import DashboardPage from './admin/pages/DashboardPage';
 import BookManagePage from './admin/pages/BookManagePage';
 import CategoryManagePage from './admin/pages/CategoryManagePage';
@@ -55,13 +56,15 @@ function App() {
                   <Route path="/category/:category" element={<CategoryPage />} />
                   <Route path="/favorites" element={<FavoritePage />} />
                   </Route>
-                  <Route path="/admin" element={<AdminLayout />}>
-                    <Route index element={<DashboardPage />} />
-                    <Route path="books" element={<BookManagePage />} />
-                    <Route path="categories" element={<CategoryManagePage />} />
-                    <Route path="orders" element={<OrderManagePage />} />
-                    <Route path="users" element={<UserManagePage />} />
-                    <Route path="carousel" element={<CarouselManagePage />} />
+                  <Route element={<AdminGuard />}>
+                    <Route path="/admin" element={<AdminLayout />}>
+                      <Route index element={<DashboardPage />} />
+                      <Route path="books" element={<BookManagePage />} />
+                      <Route path="categories" element={<CategoryManagePage />} />
+                      <Route path="orders" element={<OrderManagePage />} />
+                      <Route path="users" element={<UserManagePage />} />
+                      <Route path="carousel" element={<CarouselManagePage />} />
+                    </Route>
                   </Route>
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

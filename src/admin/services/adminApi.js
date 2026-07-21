@@ -1,5 +1,6 @@
 const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
-const DEMO_ENABLED = process.env.REACT_APP_ADMIN_DEMO_MODE !== 'false';
+// 真实管理接口是默认数据源；仅显式设置为 true 时才启用演示数据回退。
+const DEMO_ENABLED = process.env.REACT_APP_ADMIN_DEMO_MODE === 'true';
 const DEMO_KEY = 'bookstore_admin_demo_v1';
 
 const seed = {
