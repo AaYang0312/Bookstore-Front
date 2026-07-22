@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
+import { getBookPricing } from '../../utils/bookPrice';
 import AgentButton from './AgentButton';
 import AgentPanel from './AgentPanel';
 import useAgentStream from './useAgentStream';
@@ -56,14 +57,12 @@ const AgentAssistant = () => {
   };
 
   const handleAddToCart = (book) => {
-    const currentPrice = book.discount > 0
-      ? Math.floor(book.price * (100 - book.discount) / 100)
-      : book.price;
+    const { originalPrice, currentPrice } = getBookPricing(book);
     addToCart({
       id: book.id,
       title: book.title,
       author: book.author,
-      price: book.price,
+      price: originalPrice,
       currentPrice,
       imageUrl: book.cover_url,
       stock: book.stock

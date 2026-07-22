@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { getBookPricing } from '../utils/bookPrice';
 import StoreIcon from './StoreIcon';
 import './RightSidebar.css';
 
@@ -22,7 +23,7 @@ const RightSidebar = ({ hotBooks = [], newBooks = [] }) => {
                 <h4 className="hot-book-title">{book.title}</h4>
                 <p className="hot-book-author">{book.author}</p>
                 <div className="price-section">
-                  <span className="hot-book-price">¥{book.price}</span>
+                  <span className="hot-book-price">¥{getBookPricing(book).currentPrice}</span>
                   <span className="sales-badge">热销</span>
                 </div>
               </div>
@@ -51,7 +52,7 @@ const RightSidebar = ({ hotBooks = [], newBooks = [] }) => {
                 <h4 className="new-book-title">{book.title}</h4>
                 <p className="new-book-author">{book.author}</p>
                 <div className="price-section">
-                  <span className="new-book-price">¥{book.price}</span>
+                  <span className="new-book-price">¥{getBookPricing(book).currentPrice}</span>
                   <span className="new-badge-small">新书</span>
                 </div>
               </div>

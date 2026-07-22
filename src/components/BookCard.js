@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CartAnimationContext } from '../contexts/CartAnimationContext';
 import { useFavorite } from '../contexts/FavoriteContext';
 import { useCart } from '../contexts/CartContext';
+import { getBookPricing } from '../utils/bookPrice';
 import StoreIcon from './StoreIcon';
 import './BookCard.css';
 
@@ -13,12 +14,12 @@ const BookCard = ({ book }) => {
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
 
-  // 计算折扣价格（价格以元为单位，折扣以百分比为单位）
-  // 折扣是基于原价的折扣，例如：100元打10%折扣 = 90元
-  const discountedPrice = book.discount > 0 
-    ? Math.floor(book.price * (100 - book.discount) / 100)
-    : book.price;
-  const hasDiscount = book.discount > 0;
+  const {
+    originalPrice,
+    currentPrice: discountedPrice,
+    discountPercent,
+    hasDiscount
+  } = getBookPricing(book);
   
   // 检查是否缺货
   const outOfStock = book.stock <= 0;
@@ -47,7 +48,7 @@ const BookCard = ({ book }) => {
         id: book.id,
         title: book.title,
         author: book.author,
-        price: book.price,
+        price: originalPrice,
         currentPrice: discountedPrice,
         imageUrl: book.cover_url,
         stock: book.stock
@@ -92,7 +93,7 @@ const BookCard = ({ book }) => {
           <span className="book-cover-fallback" style={{ display: book.cover_url ? 'none' : 'grid' }}><StoreIcon name="brand" size={34} /></span>
         </Link>
         {outOfStock && <div className="out-of-stock">缺货</div>}
-        {hasDiscount && <div className="discount-badge">省 {book.discount}%</div>}
+        {hasDiscount && <div className="discount-badge">省 {discountPercent}%</div>}
         
         {/* 收藏按钮 */}
         <button 
@@ -116,10 +117,10 @@ const BookCard = ({ book }) => {
             {hasDiscount ? (
               <>
                 <span className="current-price">¥{discountedPrice}</span>
-                <span className="original-price">¥{book.price}</span>
+                <span className="original-price">¥{originalPrice}</span>
               </>
             ) : (
-              <span className="current-price">¥{book.price}</span>
+              <span className="current-price">¥{originalPrice}</span>
             )}
           </div>
           <span className={`book-stock ${outOfStock ? 'out-of-stock-text' : 'in-stock'}`}>

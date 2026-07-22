@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
+import { AGENT_API_URL } from '../../config/api';
 
-const AGENT_API_URL = process.env.REACT_APP_AGENT_API_URL
-  || 'http://localhost:8080/api/v1/agent/chat';
 
 const getValidationDetail = (payload) => {
   if (!Array.isArray(payload?.detail)) return '';

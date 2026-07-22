@@ -1,12 +1,9 @@
 import React from 'react';
 import StoreIcon from '../StoreIcon';
-
-const getCurrentPrice = (book) => book.discount > 0
-  ? Math.floor(book.price * (100 - book.discount) / 100)
-  : book.price;
+import { getBookPricing } from '../../utils/bookPrice';
 
 const BookRecommendationCard = ({ book, onOpen, onAddToCart }) => {
-  const currentPrice = getCurrentPrice(book);
+  const { originalPrice, currentPrice, hasDiscount } = getBookPricing(book);
   const unavailable = book.stock <= 0 || book.status === 0;
 
   return (
@@ -23,7 +20,7 @@ const BookRecommendationCard = ({ book, onOpen, onAddToCart }) => {
           {book.reason && <p>{book.reason}</p>}
           <div className="agent-book-price">
             <b>¥{currentPrice}</b>
-            {currentPrice !== book.price && <del>¥{book.price}</del>}
+            {hasDiscount && <del>¥{originalPrice}</del>}
           </div>
         </div>
       </button>

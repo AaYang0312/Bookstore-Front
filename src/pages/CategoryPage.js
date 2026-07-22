@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import BookGrid from '../components/BookGrid';
 import StoreIcon from '../components/StoreIcon';
+import { API_BASE } from '../config/api';
 import './CategoryPage.css';
 
 const categoryMeta = {
@@ -32,7 +33,7 @@ const CategoryPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`http://localhost:8080/api/v1/book/category/${category}?page=${currentPage}&page_size=12`);
+      const response = await fetch(`${API_BASE}/book/category/${category}?page=${currentPage}&page_size=12`);
       const data = await response.json();
       
       if (data.code === 0) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import BookCard from '../components/BookCard';
+import { API_BASE } from '../config/api';
 import './SearchPage.css';
 
 const SearchPage = () => {
@@ -29,7 +30,7 @@ const SearchPage = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/v1/book/search?q=${encodeURIComponent(query)}&page=${currentPage}&page_size=12`
+        `${API_BASE}/book/search?q=${encodeURIComponent(query)}&page=${currentPage}&page_size=12`
       );
       const data = await response.json();
 

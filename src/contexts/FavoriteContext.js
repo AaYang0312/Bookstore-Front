@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useUser } from './UserContext';
+import { API_BASE } from '../config/api';
 
 const FavoriteContext = createContext();
 
@@ -15,7 +16,7 @@ export const FavoriteProvider = ({ children }) => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/api/v1/favorite/${bookId}/check`, {
+      const response = await fetch(`${API_BASE}/favorite/${bookId}/check`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -41,7 +42,7 @@ export const FavoriteProvider = ({ children }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/api/v1/favorite/${bookId}`, {
+      const response = await fetch(`${API_BASE}/favorite/${bookId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -72,7 +73,7 @@ export const FavoriteProvider = ({ children }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/api/v1/favorite/${bookId}`, {
+      const response = await fetch(`${API_BASE}/favorite/${bookId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -104,7 +105,7 @@ export const FavoriteProvider = ({ children }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/api/v1/favorite/list?page=${page}&time_filter=${timeFilter}`, {
+      const response = await fetch(`${API_BASE}/favorite/list?page=${page}&time_filter=${timeFilter}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -128,7 +129,7 @@ export const FavoriteProvider = ({ children }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/v1/favorite/count', {
+      const response = await fetch(`${API_BASE}/favorite/count`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -163,4 +164,4 @@ export const FavoriteProvider = ({ children }) => {
 
 export const useFavorite = () => {
   return useContext(FavoriteContext);
-}; 
+};

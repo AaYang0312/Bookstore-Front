@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import StoreIcon from '../components/StoreIcon';
+import { API_BASE } from '../config/api';
 import './ProfilePage.css';
-
-const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
 
 const createProfileForm = (user) => ({
   username: user?.username || '',

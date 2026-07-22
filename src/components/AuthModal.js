@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
 import StoreIcon from './StoreIcon';
+import { API_BASE } from '../config/api';
 import './AuthModal.css';
 
 const resolveAuthError = (message, mode, status) => {
@@ -137,7 +138,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const fetchCaptcha = async () => {
     setIsCaptchaLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/v1/captcha/generate');
+      const response = await fetch(`${API_BASE}/captcha/generate`);
       const data = await response.json();
       
       if (response.ok && data.code === 0 && data.data?.captcha_base64) {

@@ -2,9 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import StoreIcon from '../components/StoreIcon';
+import { API_BASE } from '../config/api';
 import './OrderHistoryPage.css';
-
-const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
 
 const statusMap = {
   0: { text: '待支付', key: 'pending', icon: 'clock' },

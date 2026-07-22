@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useUser } from '../contexts/UserContext';
 import StoreIcon from '../components/StoreIcon';
+import { API_BASE } from '../config/api';
 import './CartPage.css';
 
 const CartPage = () => {
@@ -42,7 +43,7 @@ const CartPage = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/v1/order/create', {
+      const response = await fetch(`${API_BASE}/order/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

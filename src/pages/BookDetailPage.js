@@ -4,6 +4,8 @@ import { useContext } from 'react';
 import { CartAnimationContext } from '../contexts/CartAnimationContext';
 import { useCart } from '../contexts/CartContext';
 import StoreIcon from '../components/StoreIcon';
+import { API_BASE } from '../config/api';
+import { getBookPricing } from '../utils/bookPrice';
 import './BookDetailPage.css';
 
 const BookDetailPage = () => {
@@ -20,7 +22,7 @@ const BookDetailPage = () => {
 
   const fetchBookDetail = useCallback(async () => {
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/book/detail/${id}`);
+      const response = await fetch(`${API_BASE}/book/detail/${id}`);
       const data = await response.json();
       
       if (data.code === 0) {
@@ -55,7 +57,7 @@ const BookDetailPage = () => {
           id: book.id,
           title: book.title,
           author: book.author,
-          price: book.price,
+          price: originalPrice,
           currentPrice: discountedPrice,
           imageUrl: book.cover_url,
           stock: book.stock
@@ -74,7 +76,7 @@ const BookDetailPage = () => {
         id: book.id,
         title: book.title,
         author: book.author,
-        price: book.price,
+        price: originalPrice,
         currentPrice: discountedPrice,
         imageUrl: book.cover_url,
         stock: book.stock
@@ -120,8 +122,13 @@ const BookDetailPage = () => {
     );
   }
 
-  const discountedPrice = Math.round(book.price * book.discount / 100);
-  const hasDiscount = book.discount < 100;
+  const {
+    originalPrice,
+    currentPrice: discountedPrice,
+    discountPercent,
+    savings,
+    hasDiscount
+  } = getBookPricing(book);
   const outOfStock = book.stock <= 0;
 
   return (
@@ -152,7 +159,7 @@ const BookDetailPage = () => {
                 </div>
               )}
               {outOfStock && <div className="out-of-stock-badge">缺货</div>}
-              {hasDiscount && <div className="discount-badge">省 {100 - book.discount}%</div>}
+              {hasDiscount && <div className="discount-badge">省 {discountPercent}%</div>}
             </div>
           </div>
 
@@ -169,11 +176,11 @@ const BookDetailPage = () => {
                 {hasDiscount ? (
                   <>
                     <span className="current-price">¥{discountedPrice}</span>
-                    <span className="original-price">¥{book.price}</span>
-                    <span className="discount-text"><StoreIcon name="tag" size={15} /> 节省 ¥{book.price - discountedPrice}</span>
+                    <span className="original-price">¥{originalPrice}</span>
+                    <span className="discount-text"><StoreIcon name="tag" size={15} /> 节省 ¥{savings}</span>
                   </>
                 ) : (
-                  <span className="current-price">¥{book.price}</span>
+                  <span className="current-price">¥{originalPrice}</span>
                 )}
               </div>
             </div>

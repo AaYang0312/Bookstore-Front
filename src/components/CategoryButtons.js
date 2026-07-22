@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StoreIcon from './StoreIcon';
+import { API_BASE } from '../config/api';
 import './CategoryButtons.css';
 
-const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
 const categoryFallback = [
   { name: '文学', count: 0 }, { name: '科幻', count: 0 }, { name: '童话', count: 0 },
   { name: '历史', count: 0 }, { name: '计算机', count: 0 }

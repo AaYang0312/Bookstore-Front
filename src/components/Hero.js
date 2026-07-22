@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StoreIcon from './StoreIcon';
+import { API_BASE } from '../config/api';
 import './Hero.css';
 
-const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
 const HERO_FALLBACK_IMAGE = '/images/bookstore-editorial-hero.webp';
 
 const fallbackSlides = [{

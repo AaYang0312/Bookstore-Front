@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import BookGrid from './BookGrid';
 import RightSidebar from './RightSidebar';
 import StoreIcon from './StoreIcon';
+import { API_BASE } from '../config/api';
 import './MainContent.css';
-
-const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
 
 const MainContent = () => {
   const [books, setBooks] = useState([]);

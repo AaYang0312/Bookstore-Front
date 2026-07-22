@@ -78,7 +78,7 @@ npm start
 
 浏览器访问 [http://localhost:3000](http://localhost:3000)。修改环境变量后需要重新启动开发服务器。
 
-> 当前用户模块、首页图书/分类/轮播/榜单和管理后台会读取 `REACT_APP_API_BASE_URL`，收藏、订单等部分旧页面仍直接使用 `http://localhost:8080/api/v1`。因此本地完整联调时 Go 后端仍建议监听 8080 端口。
+> 所有商城、用户、收藏、订单和管理请求都通过 `src/config/api.js` 读取统一 API 地址。本地未配置时默认使用 `http://localhost:8080/api/v1`；Docker 构建则使用同源 `/api/v1`。
 
 ## 常用命令
 
@@ -134,11 +134,14 @@ bookstore-fronted-master/
 │   │   ├── StoreIcon.js           # 商城统一 SVG 图标
 │   │   └── AgentAssistant/         # 购书助手、流式请求和推荐卡片
 │   ├── contexts/                   # 用户、购物车、收藏和动画状态
+│   ├── config/api.js               # 商城与 Agent 的统一接口地址
 │   ├── layouts/StoreLayout.js      # 商城公共头部、页脚和购书助手
 │   ├── pages/                      # 商城详情、分类、搜索和订单页面
 │   ├── App.js                      # Context 装配和页面路由
 │   └── index.js                    # React 入口
 ├── Dockerfile                      # 前端生产镜像构建
+├── compose.yaml                    # 三项目及 MySQL、Redis 一键编排
+├── .env.docker.example             # Compose 环境变量示例
 ├── nginx.conf                      # Nginx 静态服务及 API 代理
 └── package.json
 ```
@@ -172,22 +175,48 @@ npm run build
 
 Create React App 会在构建阶段写入 `REACT_APP_*` 环境变量，部署后修改容器环境变量不会自动改变已经生成的静态文件。
 
-## Docker 运行
+## Docker 一键部署
 
-构建并启动前端镜像：
+`compose.yaml` 会构建并启动以下服务：
+
+- `bookstore-frontend`：React 生产构建与 Nginx，端口 3000
+- `bookstore-backend`：Go API，端口 8080
+- `bookstore-agent`：FastAPI Agent，端口 8000
+- `mysql`：MySQL 8.4，首次启动自动执行建表和示例数据脚本
+- `redis`：Redis 7，保存缓存、验证码和限流数据
+
+首次启动：
 
 ```bash
-docker build -t bookstore-frontend .
-docker run --rm -p 3000:3000 bookstore-frontend
+cp .env.docker.example .env.docker
+# 编辑 .env.docker，至少替换 MODEL_API_KEY、TAVILY_API_KEY 和共享环境的 MySQL 密码
+docker compose --env-file .env.docker up --build -d
+docker compose ps
 ```
 
-镜像中的 Nginx 在 3000 端口提供页面，并将 `/api/` 代理到 `bookstore-backend:8080`。若通过 Docker Compose 运行，请将后端服务命名为 `bookstore-backend`，或同步修改 `nginx.conf` 中的地址。
+服务全部变为 `healthy` 后访问：
 
-> 收藏、订单等部分旧页面仍使用完整的 `http://localhost:8080` 地址，这些请求不会经过 Nginx 的 `/api/` 代理。若要完整容器化，应继续将剩余请求入口统一为相对路径或统一的环境变量。
+| 服务 | 地址 |
+| --- | --- |
+| 书城页面 | `http://localhost:3000` |
+| Go API | `http://localhost:8080/api/v1` |
+| Agent API 文档 | `http://localhost:8000/docs` |
+
+查看日志与停止服务：
+
+```bash
+docker compose --env-file .env.docker logs -f
+docker compose --env-file .env.docker down
+```
+
+MySQL 与 Redis 使用命名数据卷，普通 `down` 不会删除数据。若确实要清空数据库并重新导入 SQL，可以执行 `docker compose --env-file .env.docker down -v`；该命令会永久删除 Compose 创建的数据卷。
+
+前端镜像在构建阶段将 API 地址设置为同源路径。Nginx 把 `/api/v1/agent/*` 转发给 Agent，其余 `/api/*` 转发给 Go 后端，因此浏览器不需要知道容器服务名，也不会再绕过代理访问硬编码的 `localhost:8080`。
 
 ## 当前联调边界
 
 - Go 后端、MySQL 和 Redis 应先于前端启动。
+- Compose 已通过健康检查和 `depends_on` 自动处理 MySQL、Redis、Go 后端、Agent、前端的启动顺序。
 - 购书助手是独立的可选服务；未启动时商城其他功能不受影响，助手面板会显示连接失败提示。
 - 管理后台默认不会用演示数据掩盖真实接口错误；需要纯前端演示时才设置 `REACT_APP_ADMIN_DEMO_MODE=true`。
 - 前端会发起 `DELETE /user/logout`，但当前 Go 后端没有对应路由；退出操作目前依赖清除浏览器本地登录状态。
