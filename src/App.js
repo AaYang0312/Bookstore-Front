@@ -8,6 +8,7 @@ import { FavoriteProvider } from './contexts/FavoriteContext';
 import Hero from './components/Hero';
 import CategoryButtons from './components/CategoryButtons';
 import MainContent from './components/MainContent';
+import RevealOnScroll from './components/RevealOnScroll';
 import CartPage from './pages/CartPage';
 import PaymentPage from './pages/PaymentPage';
 import SearchPage from './pages/SearchPage';
@@ -30,8 +31,12 @@ function HomePage() {
   return (
     <>
       <Hero />
-      <CategoryButtons />
-      <MainContent />
+      <RevealOnScroll>
+        <CategoryButtons />
+      </RevealOnScroll>
+      <RevealOnScroll delay={70}>
+        <MainContent />
+      </RevealOnScroll>
     </>
   );
 }

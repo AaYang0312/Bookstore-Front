@@ -3,6 +3,23 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 const UserContext = createContext();
 const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
 
+const readApiResult = async (response, fallbackMessage) => {
+  try {
+    const data = await response.json();
+    return {
+      data,
+      message: data?.message || fallbackMessage
+    };
+  } catch (error) {
+    return {
+      data: null,
+      message: response.ok
+        ? '服务返回了无法识别的数据，请稍后重试'
+        : `服务请求失败（${response.status}），请稍后重试`
+    };
+  }
+};
+
 export const useUser = () => {
   const context = useContext(UserContext);
   if (!context) {
@@ -66,15 +83,15 @@ export const UserProvider = ({ children }) => {
         }),
       });
 
-      const data = await response.json();
+      const { data, message } = await readApiResult(response, '登录失败，请稍后重试');
 
-      if (data.code === 0) {
+      if (response.ok && data?.code === 0 && data.data?.access_token) {
         localStorage.setItem('token', data.data.access_token);
         // 立即设置用户信息，确保UI立即更新
         setUser(data.data.user_info || data.data.user || null);
         return { success: true };
       } else {
-        return { success: false, message: data.message };
+        return { success: false, message, status: response.status };
       }
     } catch (error) {
       return { success: false, message: '网络错误，请稍后重试' };
@@ -99,12 +116,12 @@ export const UserProvider = ({ children }) => {
         }),
       });
 
-      const data = await response.json();
+      const { data, message } = await readApiResult(response, '注册失败，请稍后重试');
 
-      if (data.code === 0) {
+      if (response.ok && data?.code === 0) {
         return { success: true };
       } else {
-        return { success: false, message: data.message };
+        return { success: false, message, status: response.status };
       }
     } catch (error) {
       return { success: false, message: '网络错误，请稍后重试' };

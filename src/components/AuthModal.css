@@ -166,7 +166,11 @@
   font-size: 13px;
   line-height: 1.5;
 }
-.auth-modal .auth-error { border-color: rgba(183, 67, 56, .22); color: var(--color-danger); background: rgba(183, 67, 56, .08); }
+.auth-modal .auth-error { display: flex; align-items: flex-start; gap: 10px; border-color: rgba(183, 67, 56, .22); color: var(--color-danger); background: rgba(183, 67, 56, .08); }
+.auth-modal .auth-feedback-icon { flex: 0 0 22px; width: 22px; height: 22px; display: grid; place-items: center; margin-top: 1px; border-radius: 50%; color: #fff; background: var(--color-danger); font-size: 13px; font-weight: 800; }
+.auth-modal .auth-feedback-copy { min-width: 0; display: grid; gap: 2px; }
+.auth-modal .auth-feedback-copy strong { color: var(--color-danger); font-size: 13px; }
+.auth-modal .auth-feedback-copy small { color: var(--color-text-secondary); font-size: 12px; line-height: 1.5; }
 .auth-modal .auth-success { display: flex; align-items: center; gap: 9px; border-color: rgba(45, 117, 84, .22); color: var(--color-success); background: var(--color-accent-soft); }
 .auth-modal .success-icon { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--color-success); }
 
@@ -184,8 +188,10 @@
   cursor: pointer;
 }
 .auth-modal .captcha-refresh:hover { border-color: var(--color-accent); }
+.auth-modal .captcha-refresh:disabled { opacity: .62; cursor: wait; }
 .auth-modal .captcha-image { width: 100%; height: 100%; display: block; object-fit: cover; }
-.auth-modal .captcha-refresh > span { position: absolute; right: 5px; bottom: 5px; width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: rgba(29, 37, 33, .72); }
+.auth-modal .captcha-refresh-icon { position: absolute; right: 5px; bottom: 5px; width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: rgba(29, 37, 33, .72); }
+.auth-modal .captcha-fallback { color: var(--color-accent); font-size: 12px; font-weight: 700; }
 .auth-modal .captcha-hint { display: block; margin-top: 6px; color: var(--color-text-tertiary); font-size: 11px; }
 
 @media (max-width: 520px) {

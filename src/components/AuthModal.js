@@ -3,14 +3,60 @@ import { useUser } from '../contexts/UserContext';
 import StoreIcon from './StoreIcon';
 import './AuthModal.css';
 
+const resolveAuthError = (message, mode, status) => {
+  const fallback = mode === 'login' ? '登录失败，请稍后重试' : '注册失败，请稍后重试';
+  const normalizedMessage = (message || '').trim();
+
+  if (/验证码/.test(normalizedMessage)) {
+    return { field: 'captchaValue', message: '验证码错误或已失效，请输入新的验证码' };
+  }
+
+  if (mode === 'login' && /(用户|账号).*不存在/.test(normalizedMessage)) {
+    return { field: 'username', message: '账号不存在，请检查用户名，或先注册新账号' };
+  }
+
+  if (mode === 'login' && /密码错误/.test(normalizedMessage)) {
+    return { field: 'password', message: '密码错误，请重新输入' };
+  }
+
+  if (mode === 'register' && /(用户名|邮箱|手机号).*已存在/.test(normalizedMessage)) {
+    return { message: '用户名、邮箱或手机号已被使用，请更换后重试' };
+  }
+
+  if (mode === 'register' && /两次密码不一致/.test(normalizedMessage)) {
+    return { field: 'confirmPassword', message: '两次输入的密码不一致，请重新确认' };
+  }
+
+  if (/网络错误|无法连接|Failed to fetch/i.test(normalizedMessage)) {
+    return { message: '无法连接服务器，请检查网络后重试' };
+  }
+
+  if (/请求参数|参数绑定/.test(normalizedMessage)) {
+    return { message: '提交的信息格式有误，请检查后重试' };
+  }
+
+  if (/生成token/.test(normalizedMessage)) {
+    return { message: '登录服务暂时不可用，请稍后重试' };
+  }
+
+  if (status >= 500) {
+    return { message: '服务暂时不可用，请稍后重试' };
+  }
+
+  return { message: normalizedMessage || fallback };
+};
+
 const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const dialogRef = useRef(null);
   const firstInputRef = useRef(null);
   const returnFocusRef = useRef(null);
   const [mode, setMode] = useState(initialMode);
-  const { login, register, loading, error } = useUser();
+  const { login, register, loading } = useUser();
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCaptchaLoading, setIsCaptchaLoading] = useState(false);
   const [captchaData, setCaptchaData] = useState({
     captchaId: '',
     captchaBase64: ''
@@ -81,20 +127,34 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   });
   const [errors, setErrors] = useState({});
 
+  const focusField = (fieldName) => {
+    window.requestAnimationFrame(() => {
+      dialogRef.current?.querySelector(`[name="${fieldName}"]`)?.focus({ preventScroll: true });
+    });
+  };
+
   // 获取验证码
   const fetchCaptcha = async () => {
+    setIsCaptchaLoading(true);
     try {
       const response = await fetch('http://localhost:8080/api/v1/captcha/generate');
       const data = await response.json();
       
-      if (data.code === 0) {
+      if (response.ok && data.code === 0 && data.data?.captcha_base64) {
         setCaptchaData({
           captchaId: data.data.captcha_id,
           captchaBase64: data.data.captcha_base64
         });
+        setSubmitError(prev => prev.startsWith('验证码加载失败') ? '' : prev);
+      } else {
+        throw new Error(data.message || '验证码加载失败');
       }
     } catch (err) {
       console.error('获取验证码失败:', err);
+      setCaptchaData({ captchaId: '', captchaBase64: '' });
+      setSubmitError('验证码加载失败，请点击“重新加载”后再试');
+    } finally {
+      setIsCaptchaLoading(false);
     }
   };
 
@@ -104,13 +164,13 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       ...prev,
       [name]: value
     }));
-    // 清除对应字段的错误
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    setSubmitError('');
+    setErrors(prev => {
+      if (!prev[name]) return prev;
+      const nextErrors = { ...prev };
+      delete nextErrors[name];
+      return nextErrors;
+    });
   };
 
   const validateForm = () => {
@@ -173,69 +233,84 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     }
 
     setErrors(newErrors);
+    setSubmitError('');
+    const firstInvalidField = Object.keys(newErrors)[0];
+    if (firstInvalidField) focusField(firstInvalidField);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
+      setIsSubmitting(true);
       let result;
-      
-      if (mode === 'login') {
-        result = await login(
-          formData.username, 
-          formData.password, 
-          {
-            captchaID: captchaData.captchaId,
-            captchaValue: formData.captchaValue
-          }
-        );
-      } else {
-        result = await register(
-          formData.username,
-          formData.password,
-          formData.email,
-          formData.phone,
-          formData.confirmPassword,
-          {
-            captchaID: captchaData.captchaId,
-            captchaValue: formData.captchaValue
-          }
-        );
-      }
 
-      if (result.success) {
-        // 显示成功消息
-        setSuccessMessage(mode === 'login' ? '登录成功！' : '注册成功！');
-        setShowSuccess(true);
-        
-        // 清空表单
-        setFormData({
-          username: '',
-          email: '',
-          phone: '',
-          password: '',
-          confirmPassword: '',
-          captchaValue: ''
-        });
-        setErrors({});
-        
-        // 延迟关闭模态框，给用户信息更新一些时间
-        setTimeout(() => {
-          setShowSuccess(false);
-          onClose();
-          // 登录成功后刷新页面以显示头像
-          if (mode === 'login') {
-            window.location.reload();
+      try {
+        if (mode === 'login') {
+          result = await login(
+            formData.username,
+            formData.password,
+            {
+              captchaID: captchaData.captchaId,
+              captchaValue: formData.captchaValue
+            }
+          );
+        } else {
+          result = await register(
+            formData.username,
+            formData.password,
+            formData.email,
+            formData.phone,
+            formData.confirmPassword,
+            {
+              captchaID: captchaData.captchaId,
+              captchaValue: formData.captchaValue
+            }
+          );
+        }
+
+        if (result.success) {
+          // 显示成功消息
+          setSuccessMessage(mode === 'login' ? '登录成功！' : '注册成功！');
+          setShowSuccess(true);
+          setSubmitError('');
+
+          // 清空表单
+          setFormData({
+            username: '',
+            email: '',
+            phone: '',
+            password: '',
+            confirmPassword: '',
+            captchaValue: ''
+          });
+          setErrors({});
+
+          // 延迟关闭模态框，给用户信息更新一些时间
+          setTimeout(() => {
+            setShowSuccess(false);
+            onClose();
+            // 登录成功后刷新页面以显示头像
+            if (mode === 'login') {
+              window.location.reload();
+            }
+          }, 1500);
+        } else {
+          const authError = resolveAuthError(result.message, mode, result.status);
+          if (authError.field) {
+            setErrors(prev => ({ ...prev, [authError.field]: authError.message }));
+          } else {
+            setSubmitError(authError.message);
           }
-        }, 1500);
-      } else {
-        // 如果登录或注册失败，刷新验证码
-        fetchCaptcha();
-        setFormData(prev => ({
-          ...prev,
-          captchaValue: ''
-        }));
+
+          setFormData(prev => ({ ...prev, captchaValue: '' }));
+          await fetchCaptcha();
+          if (authError.field) focusField(authError.field);
+        }
+      } catch (error) {
+        setSubmitError('操作未完成，请稍后重试');
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -251,12 +326,14 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       captchaValue: ''
     });
     setErrors({});
+    setSubmitError('');
     setShowSuccess(false);
   };
 
   if (!isOpen) return null;
 
   const modeTitleId = `auth-title-${mode}`;
+  const isBusy = loading || isSubmitting || showSuccess;
 
   return (
     <div className="auth-modal-overlay" onClick={onClose}>
@@ -291,9 +368,13 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           </p>
         </div>
 
-        {error && (
-          <div className="auth-error" role="alert">
-            {error}
+        {submitError && (
+          <div className="auth-error" role="alert" aria-live="assertive">
+            <span className="auth-feedback-icon" aria-hidden="true">!</span>
+            <span className="auth-feedback-copy">
+              <strong>{mode === 'login' ? '登录未完成' : '注册未完成'}</strong>
+              <small>{submitError}</small>
+            </span>
           </div>
         )}
 
@@ -316,12 +397,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
               onChange={handleInputChange}
               className={`form-input ${errors.username ? 'error' : ''}`}
               placeholder={mode === 'login' ? '请输入用户名' : '请输入用户名'}
-              disabled={loading}
+              disabled={isBusy}
               autoComplete="username"
               aria-invalid={Boolean(errors.username)}
               aria-describedby={errors.username ? `auth-username-error-${mode}` : undefined}
             />
-            {errors.username && <span className="error-message" id={`auth-username-error-${mode}`}>{errors.username}</span>}
+            {errors.username && <span className="error-message" role="alert" id={`auth-username-error-${mode}`}>{errors.username}</span>}
           </div>
 
           {mode === 'register' && (
@@ -336,12 +417,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   onChange={handleInputChange}
                   className={`form-input ${errors.email ? 'error' : ''}`}
                   placeholder="请输入邮箱地址"
-                  disabled={loading}
+                  disabled={isBusy}
                   autoComplete="email"
                   aria-invalid={Boolean(errors.email)}
                   aria-describedby={errors.email ? 'auth-email-error' : undefined}
                 />
-                {errors.email && <span className="error-message" id="auth-email-error">{errors.email}</span>}
+                {errors.email && <span className="error-message" role="alert" id="auth-email-error">{errors.email}</span>}
               </div>
 
               <div className="form-group">
@@ -354,12 +435,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   onChange={handleInputChange}
                   className={`form-input ${errors.phone ? 'error' : ''}`}
                   placeholder="请输入手机号码"
-                  disabled={loading}
+                  disabled={isBusy}
                   autoComplete="tel"
                   aria-invalid={Boolean(errors.phone)}
                   aria-describedby={errors.phone ? 'auth-phone-error' : undefined}
                 />
-                {errors.phone && <span className="error-message" id="auth-phone-error">{errors.phone}</span>}
+                {errors.phone && <span className="error-message" role="alert" id="auth-phone-error">{errors.phone}</span>}
               </div>
             </>
           )}
@@ -374,12 +455,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
               onChange={handleInputChange}
               className={`form-input ${errors.password ? 'error' : ''}`}
               placeholder="请输入密码"
-              disabled={loading}
+              disabled={isBusy}
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               aria-invalid={Boolean(errors.password)}
               aria-describedby={errors.password ? `auth-password-error-${mode}` : undefined}
             />
-            {errors.password && <span className="error-message" id={`auth-password-error-${mode}`}>{errors.password}</span>}
+            {errors.password && <span className="error-message" role="alert" id={`auth-password-error-${mode}`}>{errors.password}</span>}
           </div>
 
           {mode === 'register' && (
@@ -393,12 +474,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 onChange={handleInputChange}
                 className={`form-input ${errors.confirmPassword ? 'error' : ''}`}
                 placeholder="请再次输入密码"
-                disabled={loading}
+                disabled={isBusy}
                 autoComplete="new-password"
                 aria-invalid={Boolean(errors.confirmPassword)}
                 aria-describedby={errors.confirmPassword ? 'auth-confirm-password-error' : undefined}
               />
-              {errors.confirmPassword && <span className="error-message" id="auth-confirm-password-error">{errors.confirmPassword}</span>}
+              {errors.confirmPassword && <span className="error-message" role="alert" id="auth-confirm-password-error">{errors.confirmPassword}</span>}
             </div>
           )}
 
@@ -415,23 +496,27 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 className={`form-input captcha-input ${errors.captchaValue ? 'error' : ''}`}
                 placeholder="请输入验证码"
                 maxLength="4"
-                disabled={loading}
+                disabled={isBusy}
                 inputMode="numeric"
                 autoComplete="off"
                 aria-invalid={Boolean(errors.captchaValue)}
                 aria-describedby={errors.captchaValue ? `auth-captcha-error-${mode}` : 'auth-captcha-hint'}
               />
-              {captchaData.captchaBase64 && (
-                <div className="captcha-image-container">
-                  <button type="button" className="captcha-refresh" onClick={fetchCaptcha} aria-label="刷新验证码" title="点击刷新验证码">
-                    <img src={captchaData.captchaBase64} alt="验证码" className="captcha-image" />
-                    <span aria-hidden="true"><StoreIcon name="refresh" size={15} /></span>
-                  </button>
-                </div>
-              )}
+              <div className="captcha-image-container">
+                <button type="button" className="captcha-refresh" onClick={fetchCaptcha} disabled={isBusy || isCaptchaLoading} aria-label="刷新验证码" title="点击刷新验证码">
+                  {captchaData.captchaBase64 ? (
+                    <>
+                      <img src={captchaData.captchaBase64} alt="验证码" className="captcha-image" />
+                      <span className="captcha-refresh-icon" aria-hidden="true"><StoreIcon name="refresh" size={15} /></span>
+                    </>
+                  ) : (
+                    <span className="captcha-fallback">{isCaptchaLoading ? '加载中...' : '重新加载'}</span>
+                  )}
+                </button>
+              </div>
             </div>
             <span className="captcha-hint" id="auth-captcha-hint">看不清？点击图片刷新</span>
-            {errors.captchaValue && <span className="error-message" id={`auth-captcha-error-${mode}`}>{errors.captchaValue}</span>}
+            {errors.captchaValue && <span className="error-message" role="alert" id={`auth-captcha-error-${mode}`}>{errors.captchaValue}</span>}
           </div>
 
           {mode === 'login' && (
@@ -444,8 +529,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
             </div>
           )}
 
-          <button type="submit" className="auth-submit-btn" disabled={loading}>
-            {loading ? '处理中...' : (mode === 'login' ? '登录' : '注册')}
+          <button type="submit" className="auth-submit-btn" disabled={isBusy || isCaptchaLoading || !captchaData.captchaId}>
+            {isSubmitting ? '正在验证...' : (showSuccess ? '已完成' : (mode === 'login' ? '登录' : '注册'))}
           </button>
         </form>
 
@@ -453,7 +538,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           <span className="switch-text">
             {mode === 'login' ? '还没有账户？' : '已有账户？'}
           </span>
-          <button type="button" className="switch-btn" onClick={switchMode} disabled={loading}>
+          <button type="button" className="switch-btn" onClick={switchMode} disabled={isBusy}>
             {mode === 'login' ? '立即注册' : '立即登录'}
           </button>
         </div>

@@ -70,6 +70,9 @@
   justify-content: center;
   gap: 8px;
   padding: 0 22px;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   border: 1px solid transparent;
   border-radius: 999px;
   color: #fff;
@@ -79,7 +82,21 @@
   font-weight: 650;
   transition: transform 200ms var(--ease-apple), background 200ms var(--ease-apple), border-color 200ms var(--ease-apple);
 }
+.hero-button::after {
+  content: "";
+  width: 42%;
+  position: absolute;
+  inset: -45% auto -45% -62%;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+  transform: skewX(-20deg);
+  transition: left 560ms var(--ease-apple);
+}
+.hero-button > span, .hero-button > .store-icon { position: relative; z-index: 1; }
 .hero-button:hover { background: #3f8968; transform: translateY(-2px); }
+.hero-button:hover::after, .hero-button:focus-visible::after { left: 122%; }
+.hero-button:active { transform: translateY(0) scale(0.98); }
 .hero-button-secondary { border-color: rgba(255,255,255,.24); background: rgba(255,255,255,.08); backdrop-filter: blur(12px); }
 .hero-button-secondary:hover { background: rgba(255,255,255,.14); }
 .hero-assurance { margin-top: auto; display: flex; align-items: center; gap: 18px; color: rgba(255,255,255,.56); font-size: 11px; }

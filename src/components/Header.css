@@ -124,11 +124,14 @@
 .login-btn:hover { background: var(--color-accent-soft); }
 .register-btn { color: #fff; background: var(--color-accent); }
 .user-section { position: relative; }
-.user-avatar-container { cursor: pointer; }
+.user-avatar-container { border: 0; background: transparent; cursor: pointer; font-family: inherit; }
+.user-avatar-container:focus-visible { outline: 0; box-shadow: 0 0 0 3px var(--color-accent-soft); }
+.user-avatar-container[aria-expanded="true"] { color: var(--color-accent); background: var(--color-accent-soft); }
 .user-avatar, .user-avatar-placeholder { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
 .user-avatar-placeholder { display: grid; place-items: center; color: #fff; background: var(--color-accent); font-size: 12px; font-weight: 700; }
 .user-name { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dropdown-arrow { color: var(--color-text-tertiary); font-size: 8px; }
+.dropdown-arrow { color: var(--color-text-tertiary); transition: transform 180ms var(--ease-apple), color 180ms var(--ease-apple); }
+.user-avatar-container[aria-expanded="true"] .dropdown-arrow { color: var(--color-accent); transform: rotate(180deg); }
 
 @media (max-width: 1120px) {
   .header-container { grid-template-columns: auto minmax(240px, 1fr) auto; gap: 18px; }

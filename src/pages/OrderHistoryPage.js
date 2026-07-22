@@ -1,200 +1,198 @@
-import React, { useState, useEffect } from 'react';
-import { useUser } from '../contexts/UserContext';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '../contexts/UserContext';
+import StoreIcon from '../components/StoreIcon';
 import './OrderHistoryPage.css';
 
+const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
+
+const statusMap = {
+  0: { text: '待支付', key: 'pending', icon: 'clock' },
+  1: { text: '已支付', key: 'paid', icon: 'check' },
+  2: { text: '已取消', key: 'cancelled', icon: 'close' }
+};
+
 const OrderHistoryPage = () => {
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const fetchOrders = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/order/list`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+
+      if (data.code === 0) {
+        let ordersArray = [];
+
+        if (data.data && data.data.orders) {
+          ordersArray = Array.isArray(data.data.orders) ? data.data.orders : [];
+        } else if (Array.isArray(data.data)) {
+          ordersArray = data.data;
+        }
+
+        setOrders(ordersArray);
+      } else {
+        setError(data.message || '获取订单失败');
+      }
+    } catch (requestError) {
+      setError('网络错误，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    console.log('OrderHistoryPage: useEffect triggered');
-    console.log('User:', user);
-    
+    if (userLoading) return;
+
     if (!user) {
-      console.log('OrderHistoryPage: No user, redirecting to home');
       navigate('/');
       return;
     }
 
-    console.log('OrderHistoryPage: Fetching orders...');
     fetchOrders();
-  }, [user, navigate]);
-
-  const fetchOrders = async () => {
-    try {
-      console.log('OrderHistoryPage: Starting fetchOrders');
-      const token = localStorage.getItem('token');
-      console.log('OrderHistoryPage: Token exists:', !!token);
-      
-      const response = await fetch('http://localhost:8080/api/v1/order/list', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      console.log('OrderHistoryPage: Response status:', response.status);
-      const data = await response.json();
-      console.log('OrderHistoryPage: Response data:', data);
-      
-      if (data.code === 0) {
-        console.log('OrderHistoryPage: API success, data.data type:', typeof data.data);
-        console.log('OrderHistoryPage: data.data:', data.data);
-        
-        // 处理后端返回的数据格式
-        let ordersArray = [];
-        if (data.data && data.data.orders) {
-          // 后端返回的是 { orders: [...], total: 10, ... } 格式
-          ordersArray = Array.isArray(data.data.orders) ? data.data.orders : [];
-        } else if (Array.isArray(data.data)) {
-          // 后端直接返回数组格式
-          ordersArray = data.data;
-        }
-        
-        setOrders(ordersArray);
-        console.log('OrderHistoryPage: Orders set:', ordersArray.length);
-      } else {
-        setError(data.message || '获取订单失败');
-        console.log('OrderHistoryPage: Error set:', data.message);
-      }
-    } catch (error) {
-      console.error('OrderHistoryPage: Fetch error:', error);
-      setError('网络错误，请稍后重试');
-    } finally {
-      setLoading(false);
-      console.log('OrderHistoryPage: Loading set to false');
-    }
-  };
-
-  const getStatusText = (status) => {
-    const statusMap = {
-      0: { text: '待支付', color: '#FF6B6B' },
-      1: { text: '已支付', color: '#4ECDC4' },
-      2: { text: '已取消', color: '#95A5A6' }
-    };
-    return statusMap[status] || { text: '未知状态', color: '#95A5A6' };
-  };
+  }, [user, userLoading, navigate, fetchOrders]);
 
   const formatDate = (dateString) => {
+    if (!dateString) return '—';
     const date = new Date(dateString);
-    return date.toLocaleString('zh-CN');
+    return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('zh-CN');
   };
 
-  const formatPrice = (priceInYuan) => {
-    return priceInYuan;
+  const formatPrice = (price) => {
+    const amount = Number(price);
+    return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
   };
 
-  console.log('OrderHistoryPage: Rendering with user:', user, 'loading:', loading, 'error:', error, 'orders type:', typeof orders, 'orders length:', Array.isArray(orders) ? orders.length : 'not array');
-
-  if (!user) {
-    console.log('OrderHistoryPage: No user, returning null');
-    return null;
-  }
-
-  if (loading) {
-    console.log('OrderHistoryPage: Loading state');
+  if (userLoading || (user && loading)) {
     return (
-      <div className="order-history-page">
+      <main className="order-history-page">
         <div className="order-history-container">
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>加载订单中...</p>
+          <div className="order-loading" aria-live="polite" aria-label="正在加载订单">
+            <div className="order-loading-heading"><span /><strong /><i /></div>
+            {[0, 1, 2].map((item) => <div className="order-loading-card" key={item}><span /><i /><strong /></div>)}
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
-  console.log('OrderHistoryPage: Main render');
+  if (!user) return null;
+
   return (
-    <div className="order-history-page">
+    <main className="order-history-page">
       <div className="order-history-container">
-        <div className="page-header">
-          <h1>我的订单</h1>
-          <p>查看您的所有订单记录</p>
-        </div>
-
-        {error && (
-          <div className="error-message">
-            {error}
+        <header className="order-page-header">
+          <div>
+            <span className="section-eyebrow">Order archive</span>
+            <h1>我的订单</h1>
+            <p>每一本抵达书架的书，都从这里留下记录。</p>
           </div>
-        )}
+          <div className="order-count" aria-label={`共 ${orders.length} 笔订单`}>
+            <span><StoreIcon name="package" size={20} /></span>
+            <strong>{orders.length}</strong>
+            <small>笔订单</small>
+          </div>
+        </header>
 
-        {!Array.isArray(orders) || orders.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">📦</div>
-            <h3>暂无订单</h3>
-            <p>您还没有任何订单记录</p>
-            <button 
-              className="browse-books-btn"
-              onClick={() => navigate('/')}
-            >
-              去浏览图书
+        {error ? (
+          <section className="order-state-card order-error" role="alert">
+            <span className="order-state-icon"><StoreIcon name="refresh" size={27} /></span>
+            <span className="section-eyebrow">暂时无法读取</span>
+            <h2>订单记录没有加载成功</h2>
+            <p>{error}</p>
+            <button type="button" className="order-primary-btn" onClick={fetchOrders}>
+              重新加载<StoreIcon name="refresh" size={17} />
             </button>
-          </div>
+          </section>
+        ) : orders.length === 0 ? (
+          <section className="order-state-card order-empty">
+            <span className="order-state-icon"><StoreIcon name="package" size={30} /></span>
+            <span className="section-eyebrow">Your first chapter</span>
+            <h2>还没有订单记录</h2>
+            <p>去挑一本喜欢的书，开启你的第一笔阅读收藏。</p>
+            <button type="button" className="order-primary-btn" onClick={() => navigate('/#books')}>
+              去逛书城<StoreIcon name="arrowRight" size={17} />
+            </button>
+          </section>
         ) : (
-          <div className="orders-list">
-            {orders.map((order) => {
-              const statusInfo = getStatusText(order.status);
+          <section className="orders-list" aria-label="订单列表">
+            {orders.map((order, orderIndex) => {
+              const statusInfo = statusMap[order.status] || { text: '未知状态', key: 'unknown', icon: 'package' };
+              const items = Array.isArray(order.order_items) ? order.order_items : [];
+
               return (
-                <div key={order.id} className="order-card">
-                  <div className="order-header">
-                    <div className="order-info">
-                      <h3>订单号: {order.order_no}</h3>
-                      <p className="order-date">下单时间: {formatDate(order.created_at)}</p>
+                <article
+                  key={order.id}
+                  className="order-card"
+                  style={{ '--order-delay': `${Math.min(orderIndex, 6) * 38}ms` }}
+                >
+                  <header className="order-card-header">
+                    <div className="order-reference">
+                      <span>订单编号</span>
+                      <strong>{order.order_no || `#${order.id}`}</strong>
+                      <time dateTime={order.created_at || undefined}>{formatDate(order.created_at)}</time>
                     </div>
-                    <div 
-                      className="order-status"
-                      style={{ backgroundColor: statusInfo.color }}
-                    >
+                    <span className={`order-status order-status-${statusInfo.key}`}>
+                      <StoreIcon name={statusInfo.icon} size={15} />
                       {statusInfo.text}
-                    </div>
-                  </div>
+                    </span>
+                  </header>
 
                   <div className="order-items">
-                    {order.order_items && order.order_items.map((item) => (
+                    {items.map((item) => (
                       <div key={item.id} className="order-item">
-                        <div className="item-image">
-                          <img 
-                            src={item.book?.cover_url || 'https://via.placeholder.com/60x80/4A90E2/FFFFFF?text=📚'} 
-                            alt={item.book?.title}
-                          />
+                        <div className="order-item-cover">
+                          {item.book?.cover_url && (
+                            <img
+                              src={item.book.cover_url}
+                              alt={`《${item.book?.title || '图书'}》封面`}
+                              loading="lazy"
+                              onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                            />
+                          )}
+                          <span className="order-cover-fallback"><StoreIcon name="brand" size={25} /></span>
                         </div>
-                        <div className="item-info">
-                          <h4>{item.book?.title}</h4>
-                          <p className="item-author">{item.book?.author}</p>
-                          <p className="item-quantity">数量: {item.quantity}</p>
+                        <div className="order-item-info">
+                          <h3>{item.book?.title || '图书信息暂缺'}</h3>
+                          <p>{item.book?.author || '作者信息暂缺'}</p>
+                          <span>数量 × {item.quantity}</span>
                         </div>
-                        <div className="item-price">
-                          <span className="price">¥{formatPrice(item.price)}</span>
-                          <span className="subtotal">小计: ¥{formatPrice(item.subtotal)}</span>
+                        <div className="order-item-price">
+                          <strong>¥{formatPrice(item.subtotal)}</strong>
+                          <span>单价 ¥{formatPrice(item.price)}</span>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="order-footer">
-                    <div className="order-total">
-                      <span>总计: </span>
-                      <span className="total-price">¥{formatPrice(order.total_amount)}</span>
+                  <footer className="order-card-footer">
+                    <div className="order-payment-meta">
+                      <StoreIcon name={order.is_paid ? 'check' : 'clock'} size={17} />
+                      <span>{order.is_paid && order.payment_time ? `支付于 ${formatDate(order.payment_time)}` : '等待完成支付'}</span>
                     </div>
-                    {order.is_paid && order.payment_time && (
-                      <p className="payment-time">
-                        支付时间: {formatDate(order.payment_time)}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                    <div className="order-total">
+                      <span>订单合计</span>
+                      <strong>¥{formatPrice(order.total_amount)}</strong>
+                    </div>
+                  </footer>
+                </article>
               );
             })}
-          </div>
+          </section>
         )}
       </div>
-    </div>
+    </main>
   );
 };
 
-export default OrderHistoryPage; 
+export default OrderHistoryPage;

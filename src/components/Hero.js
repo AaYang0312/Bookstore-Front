@@ -138,9 +138,9 @@ const Hero = () => {
                   {slide.description && slide.description !== slide.subtitle && <p className="hero-description">{slide.description}</p>}
                   <div className="hero-actions">
                     <button className="hero-button" tabIndex={index === currentSlide ? 0 : -1} onClick={() => handleButtonClick(slide.buttonLink)}>
-                      {slide.buttonText}<StoreIcon name="arrowRight" size={17} />
+                      <span>{slide.buttonText}</span><StoreIcon name="arrowRight" size={17} />
                     </button>
-                    <button className="hero-button hero-button-secondary" tabIndex={index === currentSlide ? 0 : -1} onClick={() => handleButtonClick('#categories')}>浏览分类</button>
+                    <button className="hero-button hero-button-secondary" tabIndex={index === currentSlide ? 0 : -1} onClick={() => handleButtonClick('#categories')}><span>浏览分类</span></button>
                   </div>
                   <div className="hero-assurance" aria-label="服务特点">
                     <span><StoreIcon name="spark" size={15} />编辑精选</span>

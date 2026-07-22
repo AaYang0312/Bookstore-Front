@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useUser } from '../contexts/UserContext';
@@ -23,6 +23,7 @@ const Header = () => {
   });
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const userMenuRef = useRef(null);
 
   // 获取收藏数量
   React.useEffect(() => {
@@ -30,6 +31,26 @@ const Header = () => {
       fetchFavoriteCount();
     }
   }, [user, fetchFavoriteCount]);
+
+  useEffect(() => {
+    if (!showUserDropdown) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!userMenuRef.current?.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setShowUserDropdown(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showUserDropdown]);
 
   const openAuthModal = (mode) => {
     setAuthModal({
@@ -117,8 +138,16 @@ const Header = () => {
             </Link>
             
             {user ? (
-              <div className="user-section">
-                <div className="user-avatar-container" onClick={toggleUserDropdown}>
+              <div className="user-section" ref={userMenuRef}>
+                <button
+                  type="button"
+                  className="user-avatar-container"
+                  onClick={toggleUserDropdown}
+                  aria-label={showUserDropdown ? '关闭账户菜单' : '打开账户菜单'}
+                  aria-haspopup="menu"
+                  aria-expanded={showUserDropdown}
+                  aria-controls="account-menu"
+                >
                   {user.avatar ? (
                     <img 
                       src={user.avatar} 
@@ -131,8 +160,8 @@ const Header = () => {
                     </div>
                   )}
                   <span className="user-name">{user.username}</span>
-                  <span className="dropdown-arrow">▼</span>
-                </div>
+                  <StoreIcon name="chevronDown" size={14} className="dropdown-arrow" />
+                </button>
                 
                 {showUserDropdown && (
                   <UserDropdown 
