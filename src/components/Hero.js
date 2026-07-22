@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import StoreIcon from './StoreIcon';
 import './Hero.css';
+
+const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
+const HERO_FALLBACK_IMAGE = '/images/bookstore-editorial-hero.webp';
+
+const fallbackSlides = [{
+  id: 'editorial',
+  eyebrow: '博学编辑部 · 本周精选',
+  title: '把值得读的书，放到你面前',
+  subtitle: '从经典到新知，为每一次阅读认真筛选。',
+  description: '不追逐喧闹榜单，只挑选经得起时间与思考的好书。',
+  image: HERO_FALLBACK_IMAGE,
+  buttonText: '开始选书',
+  buttonLink: '#books'
+}];
 
 const Hero = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -12,86 +27,29 @@ const Hero = () => {
   useEffect(() => {
     const fetchCarousels = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/v1/carousel/list');
+        const response = await fetch(`${API_BASE}/carousel/list`);
         const data = await response.json();
         
-        if (data.code === 0) {
+        if (data.code === 0 && Array.isArray(data.data) && data.data.length > 0) {
           // 转换后端数据格式为前端需要的格式
           const formattedSlides = data.data.map(carousel => ({
             id: carousel.id,
+            eyebrow: '博学编辑部 · 推荐阅读',
             title: carousel.title,
             subtitle: carousel.description,
             description: carousel.description,
-            image: carousel.image_url,
-            buttonText: "立即探索",
-            buttonLink: carousel.link_url || "#"
+            image: carousel.image_url || HERO_FALLBACK_IMAGE,
+            buttonText: '查看专题',
+            buttonLink: carousel.link_url || '#books'
           }));
           setSlides(formattedSlides);
         } else {
           console.error('获取轮播图失败:', data.message);
-          // 使用默认轮播图
-          setSlides([
-            {
-              id: 1,
-              title: "精选好书推荐",
-              subtitle: "发现更多精彩内容",
-              description: "为您推荐最优质的图书，涵盖文学、科技、历史等多个领域",
-              image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&h=400&fit=crop",
-              buttonText: "立即探索",
-              buttonLink: "/category/文学"
-            },
-            {
-              id: 2,
-              title: "科幻小说专区",
-              subtitle: "探索无限可能的科幻世界",
-              description: "发现更多精彩科幻作品，体验未来科技的魅力",
-              image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=1200&h=400&fit=crop",
-              buttonText: "查看科幻",
-              buttonLink: "/category/科幻"
-            },
-            {
-              id: 3,
-              title: "儿童文学天地",
-              subtitle: "为孩子们精选的童话故事",
-              description: "为孩子们精选的童话故事，培养阅读兴趣",
-              image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=400&fit=crop",
-              buttonText: "查看童话",
-              buttonLink: "/category/童话"
-            }
-          ]);
+          setSlides(fallbackSlides);
         }
       } catch (error) {
         console.error('获取轮播图失败:', error);
-        // 使用默认轮播图
-        setSlides([
-          {
-            id: 1,
-            title: "精选好书推荐",
-            subtitle: "发现更多精彩内容",
-            description: "为您推荐最优质的图书，涵盖文学、科技、历史等多个领域",
-            image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&h=400&fit=crop",
-            buttonText: "立即探索",
-            buttonLink: "/category/文学"
-          },
-          {
-            id: 2,
-            title: "科幻小说专区",
-            subtitle: "探索无限可能的科幻世界",
-            description: "发现更多精彩科幻作品，体验未来科技的魅力",
-            image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=1200&h=400&fit=crop",
-            buttonText: "查看科幻",
-            buttonLink: "/category/科幻"
-          },
-          {
-            id: 3,
-            title: "儿童文学天地",
-            subtitle: "为孩子们精选的童话故事",
-            description: "为孩子们精选的童话故事，培养阅读兴趣",
-            image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=400&fit=crop",
-            buttonText: "查看童话",
-            buttonLink: "/category/童话"
-          }
-        ]);
+        setSlides(fallbackSlides);
       } finally {
         setLoading(false);
       }
@@ -101,9 +59,10 @@ const Hero = () => {
   }, []);
 
   useEffect(() => {
+    if (slides.length <= 1) return undefined;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
+    }, 6500);
 
     return () => clearInterval(timer);
   }, [slides.length]);
@@ -133,6 +92,10 @@ const Hero = () => {
   };
 
   const handleButtonClick = (linkUrl) => {
+    if (linkUrl.startsWith('#')) {
+      document.querySelector(linkUrl)?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
     if (linkUrl.startsWith('/')) {
       navigate(linkUrl);
     } else {
@@ -143,11 +106,8 @@ const Hero = () => {
   if (loading) {
     return (
       <div className="hero-section">
-        <div className="hero-container">
-          <div className="hero-loading">
-            <div className="loading-spinner"></div>
-            <p>加载轮播图中...</p>
-          </div>
+        <div className="hero-container hero-skeleton" aria-label="正在加载精选内容">
+          <div className="hero-skeleton-copy"><span /><strong /><i /></div>
         </div>
       </div>
     );
@@ -158,40 +118,49 @@ const Hero = () => {
       <div className="hero-container">
         <div className="hero-slider">
           {slides.map((slide, index) => (
-            <div
+            <article
               key={slide.id}
               className={`hero-slide ${index === currentSlide ? 'active' : ''}`}
+              aria-hidden={index !== currentSlide}
             >
               <div className="hero-content">
-                <div className="hero-text">
-                  <h1 className="hero-title">{slide.title}</h1>
-                  <h2 className="hero-subtitle">{slide.subtitle}</h2>
-                  <p className="hero-description">{slide.description}</p>
-                  <button 
-                    className="hero-button"
-                    onClick={() => handleButtonClick(slide.buttonLink)}
-                  >
-                    {slide.buttonText}
-                  </button>
-                </div>
                 <div className="hero-image">
-                  <img src={slide.image} alt={slide.title} />
+                  <img
+                    src={slide.image || HERO_FALLBACK_IMAGE}
+                    alt=""
+                    onError={(event) => { event.currentTarget.src = HERO_FALLBACK_IMAGE; }}
+                  />
+                </div>
+                <div className="hero-text">
+                  <span className="hero-eyebrow">{slide.eyebrow || '博学编辑部 · 推荐阅读'}</span>
+                  <h1 className="hero-title">{slide.title}</h1>
+                  {slide.subtitle && <p className="hero-subtitle">{slide.subtitle}</p>}
+                  {slide.description && slide.description !== slide.subtitle && <p className="hero-description">{slide.description}</p>}
+                  <div className="hero-actions">
+                    <button className="hero-button" tabIndex={index === currentSlide ? 0 : -1} onClick={() => handleButtonClick(slide.buttonLink)}>
+                      {slide.buttonText}<StoreIcon name="arrowRight" size={17} />
+                    </button>
+                    <button className="hero-button hero-button-secondary" tabIndex={index === currentSlide ? 0 : -1} onClick={() => handleButtonClick('#categories')}>浏览分类</button>
+                  </div>
+                  <div className="hero-assurance" aria-label="服务特点">
+                    <span><StoreIcon name="spark" size={15} />编辑精选</span>
+                    <span><StoreIcon name="shield" size={15} />正版好书</span>
+                    <span><StoreIcon name="package" size={15} />安心配送</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
 
         {/* 导航按钮 */}
-        <button className="hero-nav prev" onClick={goToPrevSlide} aria-label="上一张轮播图">
-          ‹
-        </button>
-        <button className="hero-nav next" onClick={goToNextSlide} aria-label="下一张轮播图">
-          ›
-        </button>
+        {slides.length > 1 && <>
+          <button className="hero-nav prev" onClick={goToPrevSlide} aria-label="上一张轮播图"><StoreIcon name="chevronLeft" /></button>
+          <button className="hero-nav next" onClick={goToNextSlide} aria-label="下一张轮播图"><StoreIcon name="chevronRight" /></button>
+        </>}
 
         {/* 指示器 */}
-        <div className="hero-indicators">
+        {slides.length > 1 && <div className="hero-indicators">
           {slides.map((_, index) => (
             <button
               key={index}
@@ -201,7 +170,7 @@ const Hero = () => {
               aria-current={index === currentSlide ? 'true' : undefined}
             />
           ))}
-        </div>
+        </div>}
       </div>
     </div>
   );

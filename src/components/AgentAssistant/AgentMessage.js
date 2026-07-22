@@ -1,6 +1,7 @@
 import React from 'react';
 import BookRecommendationCard from './BookRecommendationCard';
 import AgentMarkdown from './AgentMarkdown';
+import StoreIcon from '../StoreIcon';
 
 const AgentMessage = ({ message, onOpenBook, onAddToCart }) => {
   const isUser = message.role === 'user';
@@ -12,7 +13,7 @@ const AgentMessage = ({ message, onOpenBook, onAddToCart }) => {
 
   return (
     <div className={`agent-message-row ${isUser ? 'is-user' : 'is-assistant'}`}>
-      {!isUser && <div className="agent-avatar" aria-hidden="true">书</div>}
+      {!isUser && <div className="agent-avatar" aria-hidden="true"><StoreIcon name="brand" size={15} /></div>}
       <div className="agent-message-content">
         {message.content && (
           <div className={`agent-bubble ${message.error ? 'is-error' : ''}`}>

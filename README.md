@@ -7,11 +7,13 @@
 ### 读者端
 
 - 首页轮播图、分类入口、精选图书、热销榜和新书展示
+- 暖色编辑型视觉系统、SVG 图标、本地主视觉兜底和浅色/深色模式
 - 图书搜索、分类浏览和图书详情
 - 用户注册、验证码登录、个人资料与密码修改
 - 图书收藏、购物车、订单创建、支付和历史订单
 - 登录状态、购物车数据的浏览器本地持久化
 - 响应式页面布局与加入购物车动画
+- 桌面与移动端均提供 44px 以上触控目标、可见焦点和减少动态效果支持
 
 ### 购书助手
 
@@ -29,6 +31,7 @@
 - 用户管理：查询用户和分配管理员角色
 - 轮播图管理：新增、编辑、排序和启停
 - `/admin` 路由会校验登录用户的 `is_admin` 字段；普通用户和未登录用户无法进入
+- 深色侧栏运营工作台、响应式抽屉导航、数据表格、状态标签和具备焦点管理的编辑弹窗
 
 管理后台默认调用真实后端接口。只有显式设置 `REACT_APP_ADMIN_DEMO_MODE=true` 时，真实接口失败后才会回退到保存在 `localStorage` 中的演示数据。
 
@@ -75,7 +78,7 @@ npm start
 
 浏览器访问 [http://localhost:3000](http://localhost:3000)。修改环境变量后需要重新启动开发服务器。
 
-> 当前用户模块和管理后台会读取 `REACT_APP_API_BASE_URL`，但商城中的图书、分类、轮播图、收藏和订单请求仍有部分直接使用 `http://localhost:8080/api/v1`。因此本地联调时 Go 后端仍需监听 8080 端口。
+> 当前用户模块、首页图书/分类/轮播/榜单和管理后台会读取 `REACT_APP_API_BASE_URL`，收藏、订单等部分旧页面仍直接使用 `http://localhost:8080/api/v1`。因此本地完整联调时 Go 后端仍建议监听 8080 端口。
 
 ## 常用命令
 
@@ -118,7 +121,8 @@ npm test           # 以交互模式运行测试
 
 ```text
 bookstore-fronted-master/
-├── public/                         # HTML 模板和公共静态资源
+├── public/
+│   └── images/                    # 首页本地主视觉及优化后的 WebP 资源
 ├── src/
 │   ├── admin/
 │   │   ├── components/             # 后台通用组件和权限守卫
@@ -127,6 +131,7 @@ bookstore-fronted-master/
 │   │   ├── services/adminApi.js    # 真实管理接口及可选演示回退
 │   │   └── styles/                 # 后台样式
 │   ├── components/
+│   │   ├── StoreIcon.js           # 商城统一 SVG 图标
 │   │   └── AgentAssistant/         # 购书助手、流式请求和推荐卡片
 │   ├── contexts/                   # 用户、购物车、收藏和动画状态
 │   ├── layouts/StoreLayout.js      # 商城公共头部、页脚和购书助手
@@ -178,7 +183,7 @@ docker run --rm -p 3000:3000 bookstore-frontend
 
 镜像中的 Nginx 在 3000 端口提供页面，并将 `/api/` 代理到 `bookstore-backend:8080`。若通过 Docker Compose 运行，请将后端服务命名为 `bookstore-backend`，或同步修改 `nginx.conf` 中的地址。
 
-> 当前仍有商城请求使用完整的 `http://localhost:8080` 地址，这些请求不会经过 Nginx 的 `/api/` 代理。若要完整容器化，应继续将请求入口统一为相对路径或统一的环境变量。
+> 收藏、订单等部分旧页面仍使用完整的 `http://localhost:8080` 地址，这些请求不会经过 Nginx 的 `/api/` 代理。若要完整容器化，应继续将剩余请求入口统一为相对路径或统一的环境变量。
 
 ## 当前联调边界
 

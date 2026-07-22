@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
+import StoreIcon from './StoreIcon';
 import './AuthModal.css';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
+  const dialogRef = useRef(null);
+  const firstInputRef = useRef(null);
+  const returnFocusRef = useRef(null);
   const [mode, setMode] = useState(initialMode);
   const { login, register, loading, error } = useUser();
   const [showSuccess, setShowSuccess] = useState(false);
@@ -22,6 +26,49 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     if (isOpen) {
       fetchCaptcha();
     }
+  }, [isOpen, mode]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    returnFocusRef.current = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.requestAnimationFrame(() => firstInputRef.current?.focus({ preventScroll: true }));
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Tab') return;
+
+      const focusable = dialogRef.current?.querySelectorAll(
+        'button:not(:disabled), input:not(:disabled), [href], [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      returnFocusRef.current?.focus?.();
+    };
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    window.requestAnimationFrame(() => {
+      if (dialogRef.current) dialogRef.current.scrollTop = 0;
+      firstInputRef.current?.focus({ preventScroll: true });
+    });
   }, [isOpen, mode]);
 
   const [formData, setFormData] = useState({
@@ -209,24 +256,31 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
   if (!isOpen) return null;
 
+  const modeTitleId = `auth-title-${mode}`;
+
   return (
     <div className="auth-modal-overlay" onClick={onClose}>
-      <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="auth-modal-close" onClick={onClose}>
-          ✕
+      <div
+        className="auth-modal"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={modeTitleId}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button type="button" className="auth-modal-close" onClick={onClose} aria-label="关闭">
+          <StoreIcon name="close" size={20} />
         </button>
         
         <div className="auth-modal-header">
           <div className="auth-logo">
-            <div className="auth-logo-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M4.5 5.25h3.75A3.75 3.75 0 0 1 12 9v9.75A3.75 3.75 0 0 0 8.25 15H4.5V5.25Z" />
-                <path d="M19.5 5.25h-3.75A3.75 3.75 0 0 0 12 9v9.75A3.75 3.75 0 0 1 15.75 15h3.75V5.25Z" />
-              </svg>
-            </div>
-            <span className="auth-logo-text">博学书城</span>
+            <div className="auth-logo-icon" aria-hidden="true"><StoreIcon name="brand" size={22} /></div>
+            <span className="auth-logo-copy">
+              <span className="auth-logo-text">博学书城</span>
+              <small>MEMBER ACCESS</small>
+            </span>
           </div>
-          <h2 className="auth-title">
+          <h2 className="auth-title" id={modeTitleId}>
             {mode === 'login' ? '欢迎回来' : '创建账户'}
           </h2>
           <p className="auth-subtitle">
@@ -238,22 +292,24 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
         </div>
 
         {error && (
-          <div className="auth-error">
+          <div className="auth-error" role="alert">
             {error}
           </div>
         )}
 
         {showSuccess && (
-          <div className="auth-success">
-            <div className="success-icon">✅</div>
+          <div className="auth-success" role="status">
+            <div className="success-icon"><StoreIcon name="check" size={17} /></div>
             <span>{successMessage}</span>
           </div>
         )}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">用户名</label>
+            <label className="form-label" htmlFor={`auth-username-${mode}`}>用户名</label>
             <input
+              id={`auth-username-${mode}`}
+              ref={firstInputRef}
               type="text"
               name="username"
               value={formData.username}
@@ -261,15 +317,19 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
               className={`form-input ${errors.username ? 'error' : ''}`}
               placeholder={mode === 'login' ? '请输入用户名' : '请输入用户名'}
               disabled={loading}
+              autoComplete="username"
+              aria-invalid={Boolean(errors.username)}
+              aria-describedby={errors.username ? `auth-username-error-${mode}` : undefined}
             />
-            {errors.username && <span className="error-message">{errors.username}</span>}
+            {errors.username && <span className="error-message" id={`auth-username-error-${mode}`}>{errors.username}</span>}
           </div>
 
           {mode === 'register' && (
             <>
               <div className="form-group">
-                <label className="form-label">邮箱地址</label>
+                <label className="form-label" htmlFor="auth-email">邮箱地址</label>
                 <input
+                  id="auth-email"
                   type="email"
                   name="email"
                   value={formData.email}
@@ -277,13 +337,17 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   className={`form-input ${errors.email ? 'error' : ''}`}
                   placeholder="请输入邮箱地址"
                   disabled={loading}
+                  autoComplete="email"
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? 'auth-email-error' : undefined}
                 />
-                {errors.email && <span className="error-message">{errors.email}</span>}
+                {errors.email && <span className="error-message" id="auth-email-error">{errors.email}</span>}
               </div>
 
               <div className="form-group">
-                <label className="form-label">手机号码</label>
+                <label className="form-label" htmlFor="auth-phone">手机号码</label>
                 <input
+                  id="auth-phone"
                   type="tel"
                   name="phone"
                   value={formData.phone}
@@ -291,15 +355,19 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   className={`form-input ${errors.phone ? 'error' : ''}`}
                   placeholder="请输入手机号码"
                   disabled={loading}
+                  autoComplete="tel"
+                  aria-invalid={Boolean(errors.phone)}
+                  aria-describedby={errors.phone ? 'auth-phone-error' : undefined}
                 />
-                {errors.phone && <span className="error-message">{errors.phone}</span>}
+                {errors.phone && <span className="error-message" id="auth-phone-error">{errors.phone}</span>}
               </div>
             </>
           )}
 
           <div className="form-group">
-            <label className="form-label">密码</label>
+            <label className="form-label" htmlFor={`auth-password-${mode}`}>密码</label>
             <input
+              id={`auth-password-${mode}`}
               type="password"
               name="password"
               value={formData.password}
@@ -307,14 +375,18 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
               className={`form-input ${errors.password ? 'error' : ''}`}
               placeholder="请输入密码"
               disabled={loading}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={errors.password ? `auth-password-error-${mode}` : undefined}
             />
-            {errors.password && <span className="error-message">{errors.password}</span>}
+            {errors.password && <span className="error-message" id={`auth-password-error-${mode}`}>{errors.password}</span>}
           </div>
 
           {mode === 'register' && (
             <div className="form-group">
-              <label className="form-label">确认密码</label>
+              <label className="form-label" htmlFor="auth-confirm-password">确认密码</label>
               <input
+                id="auth-confirm-password"
                 type="password"
                 name="confirmPassword"
                 value={formData.confirmPassword}
@@ -322,16 +394,20 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 className={`form-input ${errors.confirmPassword ? 'error' : ''}`}
                 placeholder="请再次输入密码"
                 disabled={loading}
+                autoComplete="new-password"
+                aria-invalid={Boolean(errors.confirmPassword)}
+                aria-describedby={errors.confirmPassword ? 'auth-confirm-password-error' : undefined}
               />
-              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+              {errors.confirmPassword && <span className="error-message" id="auth-confirm-password-error">{errors.confirmPassword}</span>}
             </div>
           )}
 
           {/* 验证码输入框 - 登录和注册都需要 */}
           <div className="form-group">
-            <label className="form-label">验证码</label>
+            <label className="form-label" htmlFor={`auth-captcha-${mode}`}>验证码</label>
             <div className="captcha-container">
               <input
+                id={`auth-captcha-${mode}`}
                 type="text"
                 name="captchaValue"
                 value={formData.captchaValue}
@@ -340,20 +416,22 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 placeholder="请输入验证码"
                 maxLength="4"
                 disabled={loading}
+                inputMode="numeric"
+                autoComplete="off"
+                aria-invalid={Boolean(errors.captchaValue)}
+                aria-describedby={errors.captchaValue ? `auth-captcha-error-${mode}` : 'auth-captcha-hint'}
               />
               {captchaData.captchaBase64 && (
                 <div className="captcha-image-container">
-                  <img 
-                    src={captchaData.captchaBase64}
-                    alt="验证码"
-                    className="captcha-image"
-                    onClick={fetchCaptcha}
-                    title="点击刷新验证码"
-                  />
+                  <button type="button" className="captcha-refresh" onClick={fetchCaptcha} aria-label="刷新验证码" title="点击刷新验证码">
+                    <img src={captchaData.captchaBase64} alt="验证码" className="captcha-image" />
+                    <span aria-hidden="true"><StoreIcon name="refresh" size={15} /></span>
+                  </button>
                 </div>
               )}
             </div>
-            {errors.captchaValue && <span className="error-message">{errors.captchaValue}</span>}
+            <span className="captcha-hint" id="auth-captcha-hint">看不清？点击图片刷新</span>
+            {errors.captchaValue && <span className="error-message" id={`auth-captcha-error-${mode}`}>{errors.captchaValue}</span>}
           </div>
 
           {mode === 'login' && (
@@ -375,7 +453,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           <span className="switch-text">
             {mode === 'login' ? '还没有账户？' : '已有账户？'}
           </span>
-          <button className="switch-btn" onClick={switchMode} disabled={loading}>
+          <button type="button" className="switch-btn" onClick={switchMode} disabled={loading}>
             {mode === 'login' ? '立即注册' : '立即登录'}
           </button>
         </div>

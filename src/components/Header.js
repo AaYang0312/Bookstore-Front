@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useUser } from '../contexts/UserContext';
 import { useCartAnimation } from '../contexts/CartAnimationContext';
@@ -7,6 +7,7 @@ import { useFavorite } from '../contexts/FavoriteContext';
 import AuthModal from './AuthModal';
 import UserDropdown from './UserDropdown';
 import CartAnimation from './CartAnimation';
+import StoreIcon from './StoreIcon';
 import './Header.css';
 
 const Header = () => {
@@ -69,16 +70,24 @@ const Header = () => {
       <header className="header">
         <div className="header-container">
           <Link to="/" className="logo">
-            <div className="logo-icon">📚</div>
-            <span className="logo-text">博学书城</span>
+            <span className="logo-icon"><StoreIcon name="brand" size={20} /></span>
+            <span className="logo-copy"><strong className="logo-text">博学书城</strong><small>BO XUE BOOKS</small></span>
           </Link>
+
+          <nav className="store-nav" aria-label="商城主导航">
+            <NavLink to="/" end>首页</NavLink>
+            <a href="/#books">精选</a>
+            <a href="/#categories">分类</a>
+            <NavLink to="/favorites">收藏</NavLink>
+          </nav>
           
           <div className="search-container">
             <form onSubmit={handleSearch} className="search-box">
-              <div className="search-icon">🔍</div>
+              <StoreIcon name="search" size={18} className="search-icon" />
               <input 
                 type="text" 
                 placeholder="搜索书籍、作者" 
+                aria-label="搜索书籍、作者"
                 className="search-input"
                 value={searchQuery}
                 onChange={handleSearchInputChange}
@@ -91,7 +100,7 @@ const Header = () => {
             {/* 收藏夹按钮 */}
             {user && (
               <Link to="/favorites" className="favorite-button">
-                <span className="favorite-icon">❤️</span>
+                <StoreIcon name="heart" size={18} />
                 <span className="favorite-text">收藏夹</span>
                 {favoriteCount > 0 && (
                   <span className="favorite-badge">{favoriteCount}</span>
@@ -100,7 +109,7 @@ const Header = () => {
             )}
             
             <Link to="/cart" className="cart-button" ref={cartButtonRef}>
-              <span className="cart-icon">🛒</span>
+              <StoreIcon name="cart" size={19} />
               <span className="cart-text">购物车</span>
               {getTotalItems() > 0 && (
                 <span className="cart-badge" ref={cartBadgeRef}>{getTotalItems()}</span>
@@ -169,4 +178,4 @@ const Header = () => {
   );
 };
 
-export default Header; 
+export default Header;

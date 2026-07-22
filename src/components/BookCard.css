@@ -5,69 +5,32 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 20px;
   background: var(--color-surface-solid);
-  cursor: pointer;
-  transition: transform 280ms var(--ease-apple), box-shadow 280ms var(--ease-apple), border-color 280ms var(--ease-apple);
+  box-shadow: var(--shadow-sm);
+  transition: transform 260ms var(--ease-apple), box-shadow 260ms var(--ease-apple), border-color 260ms var(--ease-apple);
 }
-
-.book-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(0, 0, 0, 0.04);
-  box-shadow: var(--shadow-md);
-}
-
-.book-card .book-image {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  position: relative;
-  overflow: hidden;
-  background: var(--color-surface-muted);
-}
-
-.book-card .book-image::after {
-  content: "";
-  position: absolute;
-  inset: 50% 0 0;
-  pointer-events: none;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.14));
-}
-
-.book-card .book-image img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  transition: transform 500ms var(--ease-apple);
-}
-
+.book-card:hover { transform: translateY(-6px); border-color: rgba(37,98,73,.2); box-shadow: var(--shadow-md); }
+.book-card .book-image { width: 100%; aspect-ratio: 4 / 5; position: relative; overflow: hidden; background: linear-gradient(145deg, #e7e2d8, #d7d1c5); }
+.book-image-link { width: 100%; height: 100%; display: block; color: inherit; text-decoration: none; }
+.book-card .book-image::after { content: ""; position: absolute; inset: 66% 0 0; pointer-events: none; background: linear-gradient(transparent, rgba(0,0,0,.16)); }
+.book-card .book-image img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform 520ms var(--ease-apple); }
 .book-card:hover .book-image img { transform: scale(1.035); }
-
-.book-card .book-emoji {
-  position: absolute;
-  inset: 0;
-  place-items: center;
-  font-size: 40px;
-}
-
-.book-card .out-of-stock,
-.book-card .discount-badge {
+.book-cover-fallback { width: 100%; height: 100%; place-items: center; color: rgba(37,98,73,.66); background: linear-gradient(145deg, #ece7dc, #d7ded6); }
+.book-card .out-of-stock, .book-card .discount-badge {
   position: absolute;
   top: 12px;
   z-index: 3;
   padding: 5px 9px;
   border-radius: 999px;
   color: #fff;
-  background: rgba(29, 29, 31, 0.76);
+  background: rgba(29,37,33,.78);
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  font-size: 11px;
-  font-weight: 650;
+  font-size: 10px;
+  font-weight: 700;
 }
-
 .book-card .out-of-stock { left: 12px; }
-.book-card .discount-badge { right: 12px; background: rgba(255, 59, 48, 0.88); }
-
+.book-card .discount-badge { left: 12px; background: rgba(169,104,53,.9); }
 .book-card .favorite-btn {
   width: 44px;
   height: 44px;
@@ -75,29 +38,21 @@
   place-items: center;
   position: absolute;
   top: 8px;
-  left: 8px;
+  right: 8px;
   z-index: 4;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.82);
+  color: #34413a;
+  background: rgba(255,255,255,.86);
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   cursor: pointer;
-  font-size: 17px;
-  transition: transform 180ms var(--ease-apple), background 180ms var(--ease-apple);
+  transition: transform 180ms var(--ease-apple), color 180ms var(--ease-apple), background 180ms var(--ease-apple);
 }
-
 .book-card .favorite-btn:hover { transform: scale(1.06); background: #fff; }
-.book-card .favorite-btn.loading { cursor: wait; opacity: 0.65; }
-
-.book-card .book-info {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 17px;
-}
-
+.book-card .favorite-btn.favorited { color: #b74338; }
+.book-card .favorite-btn.favorited .store-icon { fill: currentColor; }
+.book-card .favorite-btn.loading { cursor: wait; opacity: .65; }
+.book-card .book-info { min-width: 0; flex: 1; display: flex; flex-direction: column; padding: 18px; }
 .book-card .book-title {
   min-height: 43px;
   display: -webkit-box;
@@ -105,99 +60,52 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   color: var(--color-text);
+  text-decoration: none;
   font-size: 17px;
-  font-weight: 620;
+  font-weight: 660;
   line-height: 1.28;
-  letter-spacing: -0.015em;
+  letter-spacing: -.018em;
 }
-
-.book-card .book-author {
-  margin-top: 8px;
-  overflow: hidden;
-  color: var(--color-text-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-}
-
-.book-card .book-type {
-  width: fit-content;
-  margin-top: 10px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  color: var(--color-text-secondary);
-  background: var(--color-surface-muted);
-  font-size: 11px;
-  font-weight: 550;
-}
-
-.book-card .book-price {
-  margin: 16px 0 13px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.book-card .price-info {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-}
-
-.book-card .current-price {
-  color: var(--color-text);
-  font-size: 19px;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-}
-
-.book-card .original-price {
-  color: var(--color-text-tertiary);
-  text-decoration: line-through;
-  font-size: 12px;
-}
-
-.book-card .book-stock {
-  color: var(--color-text-tertiary);
-  white-space: nowrap;
-  font-size: 11px;
-}
-
+.book-card .book-title:hover { color: var(--color-accent); }
+.book-card .book-author { margin-top: 8px; overflow: hidden; color: var(--color-text-secondary); text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.book-card .book-type { width: fit-content; margin-top: 11px; padding: 4px 8px; border-radius: 999px; color: var(--color-accent); background: var(--color-accent-soft); font-size: 10px; font-weight: 650; }
+.book-card .book-price { margin: 18px 0 14px; display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.book-card .price-info { display: flex; align-items: baseline; gap: 7px; }
+.book-card .current-price { color: var(--color-text); font-size: 20px; font-weight: 720; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.book-card .original-price { color: var(--color-text-tertiary); text-decoration: line-through; font-size: 11px; }
+.book-card .book-stock { color: var(--color-text-tertiary); white-space: nowrap; font-size: 10px; }
 .book-card .in-stock { color: var(--color-success); }
 .book-card .out-of-stock-text { color: var(--color-danger); }
-
 .book-card .add-to-cart-btn {
   width: 100%;
   min-height: 44px;
   margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   border: 0;
   border-radius: 999px;
   color: #fff;
   background: var(--color-accent);
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 650;
   transition: transform 180ms var(--ease-apple), background 180ms var(--ease-apple);
 }
-
-.book-card .add-to-cart-btn:hover:not(.disabled) {
-  background: var(--color-accent-hover);
-  transform: scale(1.015);
-}
-
-.book-card .add-to-cart-btn.disabled {
-  color: var(--color-text-tertiary);
-  background: var(--color-surface-muted);
-  cursor: not-allowed;
-}
+.book-card .add-to-cart-btn:hover:not(.disabled) { background: var(--color-accent-hover); transform: scale(1.015); }
+.book-card .add-to-cart-btn.disabled { color: var(--color-text-tertiary); background: var(--color-surface-muted); cursor: not-allowed; }
 
 @media (max-width: 560px) {
   .book-card .book-info { padding: 13px; }
   .book-card .book-title { min-height: 39px; font-size: 15px; }
-  .book-card .book-type,
-  .book-card .book-stock { display: none; }
+  .book-card .book-type, .book-card .book-stock { display: none; }
   .book-card .book-price { margin: 13px 0 11px; }
   .book-card .current-price { font-size: 17px; }
-  .book-card .add-to-cart-btn { font-size: 13px; }
+  .book-card .add-to-cart-btn { font-size: 12px; }
+}
+
+@media (prefers-color-scheme: dark) {
+  .book-cover-fallback { background: linear-gradient(145deg, #28332d, #313a35); }
+  .book-card .favorite-btn { color: #dfe5e0; background: rgba(24,31,27,.82); }
 }

@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFavorite } from '../contexts/FavoriteContext';
 import BookGrid from '../components/BookGrid';
+import StoreIcon from '../components/StoreIcon';
 import './FavoritePage.css';
 
 const FavoritePage = () => {
+  const navigate = useNavigate();
   const { favorites, loading, fetchFavorites } = useFavorite();
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -42,40 +45,53 @@ const FavoritePage = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
-        <p>加载中...</p>
-      </div>
+      <main className="favorite-page favorite-page-state" aria-busy="true">
+        <div className="favorite-loading-card">
+          <div className="favorite-spinner" aria-hidden="true"></div>
+          <p>正在整理你的收藏书单...</p>
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="favorite-page">
-      <div className="favorite-header">
+    <main className="favorite-page">
+      <section className="favorite-header" aria-labelledby="favorite-page-title">
         <div className="favorite-title">
-          <h1>我的收藏</h1>
-          <p>共收藏了 {totalCount} 本书</p>
+          <span className="section-eyebrow">MY LIBRARY</span>
+          <h1 id="favorite-page-title">我的收藏</h1>
+          <p>把打动你的书留在这里，随时回来继续阅读旅程。</p>
         </div>
-        
-        <div className="filter-section">
-          <div className="time-filter">
-            <span className="filter-label">时间筛选：</span>
-            <div className="filter-buttons">
-              {timeFilterOptions.map(option => (
-                <button
-                  key={option.value}
-                  className={`filter-btn ${timeFilter === option.value ? 'active' : ''}`}
-                  onClick={() => handleTimeFilterChange(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+        <div className="favorite-count-card" aria-label={`共收藏 ${totalCount} 本书`}>
+          <span className="favorite-count-icon"><StoreIcon name="heart" size={20} /></span>
+          <span>
+            <strong>{totalCount}</strong>
+            <small>本珍藏好书</small>
+          </span>
+        </div>
+      </section>
+
+      <section className="favorite-toolbar" aria-label="收藏筛选">
+        <div className="time-filter">
+          <span className="filter-label"><StoreIcon name="clock" size={16} /> 收藏时间</span>
+          <div className="filter-buttons" role="group" aria-label="按收藏时间筛选">
+            {timeFilterOptions.map(option => (
+              <button
+                type="button"
+                key={option.value}
+                className={`filter-btn ${timeFilter === option.value ? 'active' : ''}`}
+                onClick={() => handleTimeFilterChange(option.value)}
+                aria-pressed={timeFilter === option.value}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
+        <span className="favorite-result-count">当前共 {totalCount} 本</span>
+      </section>
 
-      <div className="favorite-content">
+      <section className="favorite-content" aria-live="polite">
         {favorites.length > 0 ? (
           <>
             <BookGrid books={favorites.map(fav => fav.book)} />
@@ -83,19 +99,24 @@ const FavoritePage = () => {
             {totalPages > 1 && (
               <div className="pagination">
                 <button 
+                  type="button"
                   className="pagination-btn" 
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
+                  aria-label="上一页"
                 >
-                  ‹
+                  <StoreIcon name="chevronLeft" size={17} />
                 </button>
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   const pageNum = i + 1;
                   return (
                     <button
+                      type="button"
                       key={pageNum}
                       className={`pagination-btn ${currentPage === pageNum ? 'active' : ''}`}
                       onClick={() => handlePageChange(pageNum)}
+                      aria-label={`第 ${pageNum} 页`}
+                      aria-current={currentPage === pageNum ? 'page' : undefined}
                     >
                       {pageNum}
                     </button>
@@ -106,8 +127,10 @@ const FavoritePage = () => {
                     {currentPage > 3 && <span className="pagination-ellipsis">...</span>}
                     {currentPage > 3 && currentPage < totalPages - 2 && (
                       <button
+                        type="button"
                         className="pagination-btn"
                         onClick={() => handlePageChange(currentPage)}
+                        aria-current="page"
                       >
                         {currentPage}
                       </button>
@@ -115,8 +138,10 @@ const FavoritePage = () => {
                     {currentPage < totalPages - 2 && <span className="pagination-ellipsis">...</span>}
                     {currentPage < totalPages - 2 && (
                       <button
+                        type="button"
                         className="pagination-btn"
                         onClick={() => handlePageChange(totalPages)}
+                        aria-label={`第 ${totalPages} 页`}
                       >
                         {totalPages}
                       </button>
@@ -124,30 +149,33 @@ const FavoritePage = () => {
                   </>
                 )}
                 <button 
+                  type="button"
                   className="pagination-btn" 
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
+                  aria-label="下一页"
                 >
-                  ›
+                  <StoreIcon name="chevronRight" size={17} />
                 </button>
               </div>
             )}
           </>
         ) : (
-          <div className="empty-state">
-            <div className="empty-icon">❤️</div>
-            <h3 className="empty-title">暂无收藏</h3>
+          <div className="favorite-empty-state">
+            <div className="empty-icon"><StoreIcon name="heart" size={30} /></div>
+            <span className="section-eyebrow">YOUR NEXT FAVORITE</span>
+            <h2 className="empty-title">这里还没有收藏</h2>
             <p className="empty-description">
-              您还没有收藏任何书籍，快去首页发现好书吧！
+              遇到喜欢的书时，点一下心形按钮，它就会出现在这里。
             </p>
-            <button onClick={() => window.location.href = '/'} className="back-to-home-btn">
-              去首页
+            <button type="button" onClick={() => navigate('/')} className="back-to-home-btn">
+              去发现好书 <StoreIcon name="arrowRight" size={18} />
             </button>
           </div>
         )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
 
-export default FavoritePage; 
+export default FavoritePage;

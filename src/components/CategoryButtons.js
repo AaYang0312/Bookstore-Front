@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import StoreIcon from './StoreIcon';
 import './CategoryButtons.css';
+
+const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
+const categoryFallback = [
+  { name: '文学', count: 0 }, { name: '科幻', count: 0 }, { name: '童话', count: 0 },
+  { name: '历史', count: 0 }, { name: '计算机', count: 0 }
+];
+const categoryStyles = {
+  '文学': ['brand', '#9b5c45'], '科幻': ['compass', '#3f6f77'], '童话': ['spark', '#8b6484'],
+  '历史': ['clock', '#8a6a3d'], '计算机': ['layers', '#486b58'], '其他': ['brand', '#68706b']
+};
 
 const CategoryButtons = () => {
   const [categories, setCategories] = useState([]);
@@ -9,7 +20,7 @@ const CategoryButtons = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/category/list');
+      const response = await fetch(`${API_BASE}/category/list`);
       const data = await response.json();
       
       if (data.code === 0) {
@@ -21,37 +32,15 @@ const CategoryButtons = () => {
           gradient: category.gradient
         }));
         
-        setCategories(categoryList);
+        setCategories(categoryList.length ? categoryList : categoryFallback);
       }
     } catch (err) {
       console.error('获取分类失败:', err);
+      setCategories(categoryFallback);
     }
   };
 
-  const getCategoryIcon = (categoryName) => {
-    const iconMap = {
-      '文学': '📖', '科幻': '🚀', '古典文学': '🏛️', '政治小说': '🏛️', '政治寓言': '🦁',
-      '童话': '🧸', '科普': '🔬', '历史': '📜', '科技': '💻', '计算机': '💻', '其他': '📚'
-    };
-    return iconMap[categoryName] || '📚';
-  };
-
-  const getCategoryColor = (categoryName) => {
-    const colorMap = {
-      '文学': '#ff6b6b',
-      '科幻': '#4ecdc4',
-      '古典文学': '#45b7d1',
-      '政治小说': '#96ceb4',
-      '政治寓言': '#feca57',
-      '童话': '#ff9ff3',
-      '科普': '#54a0ff',
-      '历史': '#5f27cd',
-      '科技': '#00d2d3',
-      '计算机': '#ff9f43',
-      '其他': '#c8d6e5'
-    };
-    return colorMap[categoryName] || '#c8d6e5';
-  };
+  const getCategoryStyle = (categoryName) => categoryStyles[categoryName] || categoryStyles['其他'];
 
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
@@ -67,9 +56,12 @@ const CategoryButtons = () => {
   }, []);
 
   return (
-    <div className="category-buttons-section">
+    <section className="category-buttons-section" id="categories">
       <div className="category-buttons-container">
-        <h2 className="category-section-title">图书分类</h2>
+        <div className="category-heading">
+          <div><span className="section-eyebrow">按兴趣探索</span><h2 className="category-section-title">下一本，从这里开始</h2></div>
+          <p>从故事、想象到知识，找到适合此刻的阅读方向。</p>
+        </div>
         <div className="category-buttons-grid">
           {/* 全部图书按钮 */}
           <button
@@ -77,10 +69,10 @@ const CategoryButtons = () => {
             className={`category-button all-category ${selectedCategory === 'all' ? 'active' : ''}`}
             onClick={() => handleCategoryClick('all')}
           >
-            <div className="category-button-icon">📚</div>
+            <div className="category-button-icon"><StoreIcon name="layers" size={22} /></div>
             <div className="category-button-content">
               <div className="category-button-name">全部图书</div>
-              <div className="category-button-count">20</div>
+              <div className="category-button-count">全部在售</div>
             </div>
             <div className="category-button-overlay"></div>
           </button>
@@ -93,20 +85,20 @@ const CategoryButtons = () => {
               className={`category-button ${selectedCategory === category.name ? 'active' : ''}`}
               onClick={() => handleCategoryClick(category.name)}
               style={{
-                '--category-accent': category.color || getCategoryColor(category.name)
+                '--category-accent': getCategoryStyle(category.name)[1]
               }}
             >
-              <div className="category-button-icon">{category.icon || getCategoryIcon(category.name)}</div>
+              <div className="category-button-icon"><StoreIcon name={getCategoryStyle(category.name)[0]} size={22} /></div>
               <div className="category-button-content">
                 <div className="category-button-name">{category.name}</div>
-                <div className="category-button-count">{category.count}</div>
+                <div className="category-button-count">{category.count ? `${category.count} 本` : '浏览分类'}</div>
               </div>
               <div className="category-button-overlay"></div>
             </button>
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

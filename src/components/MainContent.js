@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import BookGrid from './BookGrid';
 import RightSidebar from './RightSidebar';
+import StoreIcon from './StoreIcon';
 import './MainContent.css';
+
+const API_BASE = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
 
 const MainContent = () => {
   const [books, setBooks] = useState([]);
@@ -20,7 +23,9 @@ const MainContent = () => {
 
   const fetchBooks = async (page = 1) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/book/list?page=${page}&page_size=12`);
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`${API_BASE}/book/list?page=${page}&page_size=12`);
       const data = await response.json();
       
       if (data.code === 0) {
@@ -43,7 +48,7 @@ const MainContent = () => {
 
   const fetchHotBooks = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/book/hot');
+      const response = await fetch(`${API_BASE}/book/hot`);
       const data = await response.json();
       
       if (data.code === 0) {
@@ -56,7 +61,7 @@ const MainContent = () => {
 
   const fetchNewBooks = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/book/new');
+      const response = await fetch(`${API_BASE}/book/new`);
       const data = await response.json();
       
       if (data.code === 0) {
@@ -71,8 +76,7 @@ const MainContent = () => {
     return (
       <div className="main-content">
         <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>正在加载书籍...</p>
+          <div className="book-loading-grid" aria-label="正在加载书籍"><span /><span /><span /><span /></div>
         </div>
       </div>
     );
@@ -82,8 +86,10 @@ const MainContent = () => {
     return (
       <div className="main-content">
         <div className="error-container">
+          <span className="error-icon"><StoreIcon name="brand" size={26} /></span>
+          <h2>书架暂时没有打开</h2>
           <p className="error-message">{error}</p>
-          <button onClick={() => window.location.reload()} className="retry-button">
+          <button onClick={() => fetchBooks(currentPage)} className="retry-button">
             重试
           </button>
         </div>
@@ -92,11 +98,11 @@ const MainContent = () => {
   }
 
   return (
-    <div className="main-content">
+    <section className="main-content" id="books">
       <div className="main-container">
         <div className="center-section">
           <div className="book-section">
-            <h3 className="section-title">精选图书</h3>
+            <div className="books-heading"><div><span className="section-eyebrow">编辑精选</span><h2 className="section-title">值得慢慢读的书</h2></div><p>本页共 {books.length} 本</p></div>
             <BookGrid books={books} />
             <div className="pagination">
               <button 
@@ -104,7 +110,7 @@ const MainContent = () => {
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
               >
-                ‹
+                <StoreIcon name="chevronLeft" size={18} />
               </button>
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 const pageNum = i + 1;
@@ -145,14 +151,14 @@ const MainContent = () => {
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
-                ›
+                <StoreIcon name="chevronRight" size={18} />
               </button>
             </div>
           </div>
         </div>
         <RightSidebar hotBooks={hotBooks} newBooks={newBooks} />
       </div>
-    </div>
+    </section>
   );
 };
 

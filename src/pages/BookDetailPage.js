@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { CartAnimationContext } from '../contexts/CartAnimationContext';
 import { useCart } from '../contexts/CartContext';
+import StoreIcon from '../components/StoreIcon';
 import './BookDetailPage.css';
 
 const BookDetailPage = () => {
@@ -15,6 +16,7 @@ const BookDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [coverFailed, setCoverFailed] = useState(false);
 
   const fetchBookDetail = useCallback(async () => {
     try {
@@ -95,9 +97,9 @@ const BookDetailPage = () => {
   if (loading) {
     return (
       <div className="book-detail-page">
-        <div className="loading-container">
+        <div className="detail-state-container">
           <div className="loading-spinner"></div>
-          <p>正在加载书籍详情...</p>
+          <p>正在展开这本书...</p>
         </div>
       </div>
     );
@@ -106,8 +108,10 @@ const BookDetailPage = () => {
   if (error || !book) {
     return (
       <div className="book-detail-page">
-        <div className="error-container">
-          <p className="error-message">{error || '书籍不存在'}</p>
+        <div className="detail-state-container">
+          <div className="detail-state-icon"><StoreIcon name="brand" size={28} /></div>
+          <h1>暂时找不到这本书</h1>
+          <p>{error || '书籍不存在'}</p>
           <button onClick={() => navigate('/')} className="back-button">
             返回首页
           </button>
@@ -123,40 +127,41 @@ const BookDetailPage = () => {
   return (
     <div className="book-detail-page">
       <div className="detail-container">
-        <div className="breadcrumb">
+        <nav className="detail-breadcrumb" aria-label="面包屑导航">
           <button onClick={() => navigate('/')} className="breadcrumb-link">
-            ← 返回首页
+            <StoreIcon name="chevronLeft" size={17} /> 返回书城
           </button>
-          <span className="breadcrumb-separator">/</span>
+          <span aria-hidden="true">/</span>
           <span className="breadcrumb-current">{book.title}</span>
-        </div>
+        </nav>
 
         <div className="book-detail-content">
           <div className="book-image-section">
             <div className="book-image-container">
-              <img 
-                src={book.cover_url || 'https://via.placeholder.com/400x600/4A90E2/FFFFFF?text=📚'} 
-                alt={book.title}
-                className="book-detail-image"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-              <div className="book-placeholder" style={{ display: 'none' }}>
-                <span className="placeholder-icon">📚</span>
+              {book.cover_url && !coverFailed ? (
+                <img
+                  src={book.cover_url}
+                  alt={`${book.title}封面`}
+                  className="book-detail-image"
+                  onError={() => setCoverFailed(true)}
+                />
+              ) : (
+                <div className="book-placeholder">
+                <StoreIcon name="brand" size={52} />
                 <p className="placeholder-text">暂无封面</p>
-              </div>
+                </div>
+              )}
               {outOfStock && <div className="out-of-stock-badge">缺货</div>}
-              {hasDiscount && <div className="discount-badge">{100 - book.discount}% OFF</div>}
+              {hasDiscount && <div className="discount-badge">省 {100 - book.discount}%</div>}
             </div>
           </div>
 
           <div className="book-info-section">
             <div className="book-header">
+              <span className="section-eyebrow">BOOK DETAILS</span>
+              <div className="book-type-badge">{book.type}</div>
               <h1 className="book-title">{book.title}</h1>
               <p className="book-author">作者：{book.author}</p>
-              <div className="book-type-badge">{book.type}</div>
             </div>
 
             <div className="book-price-section">
@@ -165,7 +170,7 @@ const BookDetailPage = () => {
                   <>
                     <span className="current-price">¥{discountedPrice}</span>
                     <span className="original-price">¥{book.price}</span>
-                    <span className="discount-text">节省 ¥{book.price - discountedPrice}</span>
+                    <span className="discount-text"><StoreIcon name="tag" size={15} /> 节省 ¥{book.price - discountedPrice}</span>
                   </>
                 ) : (
                   <span className="current-price">¥{book.price}</span>
@@ -180,21 +185,25 @@ const BookDetailPage = () => {
                 </span>
                 {!outOfStock && (
                   <div className="quantity-selector">
-                    <label>数量：</label>
+                    <span className="quantity-label">数量</span>
                     <button 
+                      type="button"
                       className="quantity-btn"
                       onClick={() => handleQuantityChange(quantity - 1)}
                       disabled={quantity <= 1}
+                      aria-label="减少数量"
                     >
-                      -
+                      <StoreIcon name="minus" size={16} />
                     </button>
                     <span className="quantity-display">{quantity}</span>
                     <button 
+                      type="button"
                       className="quantity-btn"
                       onClick={() => handleQuantityChange(quantity + 1)}
                       disabled={quantity >= book.stock}
+                      aria-label="增加数量"
                     >
-                      +
+                      <StoreIcon name="plus" size={16} />
                     </button>
                   </div>
                 )}
@@ -212,18 +221,19 @@ const BookDetailPage = () => {
                 onClick={handleAddToCart}
                 disabled={outOfStock}
               >
-                {outOfStock ? '暂时缺货' : `🛒 加入购物车 (${quantity})`}
+                {outOfStock ? '暂时缺货' : <><StoreIcon name="cart" size={19} /> 加入购物车（{quantity}）</>}
               </button>
               <button 
                 className={`buy-now-btn ${outOfStock ? 'disabled' : ''}`}
                 onClick={handleBuyNow}
                 disabled={outOfStock}
               >
-                {outOfStock ? '暂时缺货' : '立即购买'}
+                {outOfStock ? '暂时缺货' : <>立即购买 <StoreIcon name="arrowRight" size={18} /></>}
               </button>
             </div>
 
             <div className="book-meta">
+              <h2>出版信息</h2>
               <div className="meta-item">
                 <span className="meta-label">ISBN：</span>
                 <span className="meta-value">{book.isbn || '暂无'}</span>
@@ -256,4 +266,4 @@ const BookDetailPage = () => {
   );
 };
 
-export default BookDetailPage; 
+export default BookDetailPage;

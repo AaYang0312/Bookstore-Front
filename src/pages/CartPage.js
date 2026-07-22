@@ -1,7 +1,8 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useUser } from '../contexts/UserContext';
+import StoreIcon from '../components/StoreIcon';
 import './CartPage.css';
 
 const CartPage = () => {
@@ -10,11 +11,9 @@ const CartPage = () => {
   const { user } = useUser();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+  const [failedImages, setFailedImages] = useState({});
   const checkoutInFlightRef = useRef(false);
   const idempotencyKeyRef = useRef(null);
-
-  // 缓存默认图片URL，避免重复请求
-  const defaultImageUrl = useMemo(() => 'https://via.placeholder.com/80x80/4A90E2/FFFFFF?text=📚', []);
 
   const handleQuantityChange = (bookId, newQuantity) => {
     if (newQuantity < 1) {
@@ -78,11 +77,14 @@ const CartPage = () => {
     return (
       <div className="cart-page">
         <div className="cart-container">
-          <h2 className="cart-title">购物车</h2>
           <div className="empty-cart">
-            <div className="empty-cart-icon">🛒</div>
-            <p className="empty-cart-text">购物车是空的</p>
-            <p className="empty-cart-subtext">快去挑选心仪的图书吧！</p>
+            <div className="empty-cart-icon"><StoreIcon name="cart" size={30} /></div>
+            <span className="section-eyebrow">MY CART</span>
+            <h1 className="empty-cart-title">购物车还是空的</h1>
+            <p className="empty-cart-subtext">把想读的书放进来，慢慢组成你的下一段阅读旅程。</p>
+            <button type="button" className="empty-cart-action" onClick={() => navigate('/')}>
+              去书城看看 <StoreIcon name="arrowRight" size={18} />
+            </button>
           </div>
         </div>
       </div>
@@ -92,79 +94,80 @@ const CartPage = () => {
   return (
     <div className="cart-page">
       <div className="cart-container">
-        <div className="breadcrumb">
-          <span>首页</span>
-          <span className="breadcrumb-separator">›</span>
-          <span>购物车</span>
+        <div className="cart-page-heading">
+          <div>
+            <span className="section-eyebrow">MY CART</span>
+            <h1>购物车</h1>
+            <p>核对你的书单和数量，准备开启下一段阅读。</p>
+          </div>
+          <span className="cart-count-label">{getTotalItems()} 本书</span>
         </div>
         
         <div className="cart-content">
           <div className="cart-items">
-            <div className="cart-header">
-              <div className="select-all">
-                <input type="checkbox" defaultChecked />
-                <span>全选</span>
-              </div>
-              <div className="cart-columns">
-                <span className="column-product">商品信息</span>
-                <span className="column-price">单价</span>
-                <span className="column-quantity">数量</span>
-                <span className="column-subtotal">小计</span>
-                <span className="column-action">操作</span>
-              </div>
+            <div className="cart-header" aria-hidden="true">
+              <span>图书信息</span>
+              <span>单价</span>
+              <span>数量</span>
+              <span>小计</span>
+              <span>操作</span>
             </div>
             
             <div className="cart-items-list">
               {items.map((item) => (
                 <div key={item.id} className="cart-item">
-                  <div className="item-checkbox">
-                    <input type="checkbox" defaultChecked />
-                  </div>
                   <div className="item-info">
-                                      <div className="item-image">
-                    <img 
-                      src={item.imageUrl || defaultImageUrl} 
-                      alt={item.title}
-                      onError={(e) => {
-                        if (e.target.src !== defaultImageUrl) {
-                          e.target.src = defaultImageUrl;
-                        }
-                      }}
-                    />
-                  </div>
+                    <div className="item-image">
+                      {item.imageUrl && !failedImages[item.id] ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={`${item.title}封面`}
+                          onError={() => setFailedImages((current) => ({ ...current, [item.id]: true }))}
+                        />
+                      ) : <StoreIcon name="brand" size={28} />}
+                    </div>
                     <div className="item-details">
-                      <h4 className="item-title">{item.title}</h4>
+                      <button type="button" className="item-title" onClick={() => navigate(`/book/${item.id}`)}>{item.title}</button>
                       <p className="item-author">{item.author}</p>
                     </div>
                   </div>
-                  <div className="item-price">¥{item.currentPrice}</div>
+                  <div className="item-price"><span>单价</span>¥{item.currentPrice}</div>
                   <div className="item-quantity">
                     <button 
+                      type="button"
                       className="quantity-btn"
                       onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                      aria-label={`减少《${item.title}》数量`}
                     >
-                      -
+                      <StoreIcon name="minus" size={16} />
                     </button>
                     <input 
                       type="number" 
                       value={item.quantity}
                       onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 0)}
                       className="quantity-input"
+                      aria-label={`《${item.title}》数量`}
+                      min="1"
+                      max={item.stock}
                     />
                     <button 
+                      type="button"
                       className="quantity-btn"
                       onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                      aria-label={`增加《${item.title}》数量`}
                     >
-                      +
+                      <StoreIcon name="plus" size={16} />
                     </button>
                   </div>
-                  <div className="item-subtotal">¥{item.currentPrice * item.quantity}</div>
+                  <div className="item-subtotal"><span>小计</span>¥{item.currentPrice * item.quantity}</div>
                   <div className="item-action">
                     <button 
+                      type="button"
                       className="remove-btn"
                       onClick={() => removeFromCart(item.id)}
+                      aria-label={`移除《${item.title}》`}
                     >
-                      🗑️
+                      <StoreIcon name="trash" size={19} />
                     </button>
                   </div>
                 </div>
@@ -173,33 +176,39 @@ const CartPage = () => {
           </div>
           
           <div className="order-summary">
-            <h3 className="summary-title">订单信息</h3>
+            <span className="section-eyebrow">ORDER SUMMARY</span>
+            <h2 className="summary-title">订单摘要</h2>
             <div className="summary-items">
               <div className="summary-item">
-                <span>商品金额:</span>
+                <span>商品金额</span>
                 <span>¥{totalPrice}</span>
               </div>
 
               <div className="summary-item">
-                <span>运费:</span>
+                <span>运费</span>
                 <span>免运费</span>
               </div>
               <div className="summary-total">
-                <span>总计:</span>
+                <span>应付总额</span>
                 <span>¥{totalPrice}</span>
               </div>
             </div>
             <button 
+              type="button"
               className="checkout-btn"
               onClick={handleCheckout}
               disabled={checkoutLoading}
             >
-              {checkoutLoading ? '正在创建订单...' : `去结算 (${getTotalItems()}件)`}
+              {checkoutLoading ? '正在创建订单...' : `去结算（${getTotalItems()} 本）`}
             </button>
-            {checkoutError && <p className="error-message">{checkoutError}</p>}
+            {checkoutError && <p className="cart-checkout-error" role="alert">{checkoutError}</p>}
             <p className="summary-note">
-              已选择{items.length}件商品,总计{getTotalItems()}本
+              已选择 {items.length} 种图书，共 {getTotalItems()} 本
             </p>
+            <div className="summary-assurance">
+              <StoreIcon name="shield" size={17} />
+              <span>库存与价格将在提交订单时再次确认</span>
+            </div>
           </div>
         </div>
       </div>

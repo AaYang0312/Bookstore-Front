@@ -1,4 +1,5 @@
 import React from 'react';
+import StoreIcon from '../StoreIcon';
 
 const AgentButton = ({ isOpen, onClick }) => (
   <button
@@ -8,7 +9,9 @@ const AgentButton = ({ isOpen, onClick }) => (
     aria-label={isOpen ? '关闭购书助手' : '打开购书助手'}
     aria-expanded={isOpen}
   >
-    <span className="agent-launcher-icon" aria-hidden="true">{isOpen ? '×' : '书'}</span>
+    <span className="agent-launcher-icon" aria-hidden="true">
+      <StoreIcon name={isOpen ? 'close' : 'spark'} size={20} />
+    </span>
     {!isOpen && <span className="agent-launcher-label">购书助手</span>}
   </button>
 );

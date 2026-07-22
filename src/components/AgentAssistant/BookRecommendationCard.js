@@ -1,4 +1,5 @@
 import React from 'react';
+import StoreIcon from '../StoreIcon';
 
 const getCurrentPrice = (book) => book.discount > 0
   ? Math.floor(book.price * (100 - book.discount) / 100)
@@ -14,7 +15,7 @@ const BookRecommendationCard = ({ book, onOpen, onAddToCart }) => {
         <div className="agent-book-cover">
           {book.cover_url
             ? <img src={book.cover_url} alt="" />
-            : <span aria-hidden="true">📚</span>}
+            : <StoreIcon name="brand" size={23} />}
         </div>
         <div className="agent-book-copy">
           <strong>{book.title}</strong>
@@ -32,7 +33,7 @@ const BookRecommendationCard = ({ book, onOpen, onAddToCart }) => {
         disabled={unavailable}
         onClick={() => onAddToCart(book)}
       >
-        {unavailable ? '暂时缺货' : '加入购物车'}
+        {unavailable ? '暂时缺货' : <><StoreIcon name="cart" size={16} /> 加入购物车</>}
       </button>
     </article>
   );

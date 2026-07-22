@@ -12,7 +12,13 @@ const paths = {
   menu: <><path d="M4 7h16M4 12h16M4 17h16"/></>,
   close: <><path d="m6 6 12 12M18 6 6 18"/></>,
   edit: <><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></>,
-  arrow: <><path d="m9 18 6-6-6-6"/></>
+  arrow: <><path d="m9 18 6-6-6-6"/></>,
+  store: <><path d="M4 10v10h16V10"/><path d="M3 4h18l-2 6H5L3 4Z"/><path d="M8 20v-6h4v6"/></>,
+  back: <><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></>,
+  inventory: <><path d="m21 8-9-5-9 5 9 5 9-5Z"/><path d="m3 8 9 5v9l-9-5V8Z"/><path d="m21 8-9 5v9l9-5V8Z"/></>,
+  revenue: <><circle cx="12" cy="12" r="9"/><path d="M8 8h8M12 8v9M9 12h6"/></>,
+  trend: <><path d="M3 20h18"/><path d="m5 16 4-5 4 3 6-8"/></>,
+  alert: <><path d="M10.3 3.5 2.7 17a2 2 0 0 0 1.8 3h15a2 2 0 0 0 1.8-3L13.7 3.5a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></>
 };
 
 const AdminIcon = ({ name, size = 20 }) => (

@@ -1,12 +1,12 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { CartAnimationContext } from '../contexts/CartAnimationContext';
 import { useFavorite } from '../contexts/FavoriteContext';
 import { useCart } from '../contexts/CartContext';
+import StoreIcon from './StoreIcon';
 import './BookCard.css';
 
 const BookCard = ({ book }) => {
-  const navigate = useNavigate();
   const { triggerCartAnimation } = useContext(CartAnimationContext);
   const { checkFavorite, addFavorite, removeFavorite } = useFavorite();
   const { addToCart } = useCart();
@@ -31,10 +31,6 @@ const BookCard = ({ book }) => {
     };
     checkFavoriteStatus();
   }, [book.id, checkFavorite]);
-
-  const handleCardClick = () => {
-    navigate(`/book/${book.id}`);
-  };
 
   const handleAddToCart = (e) => {
     e.stopPropagation(); // 阻止事件冒泡
@@ -79,32 +75,39 @@ const BookCard = ({ book }) => {
   };
 
   return (
-    <div className="book-card" onClick={handleCardClick}>
+    <article className="book-card">
       <div className="book-image">
-        <img 
-          src={book.cover_url || 'https://via.placeholder.com/300x225/4A90E2/FFFFFF?text=📚'} 
-          alt={book.title}
-          onError={(e) => {
-            e.target.style.display = 'none';
-            e.target.nextSibling.style.display = 'flex';
-          }}
-        />
-        <div className="book-emoji" style={{ display: 'none' }}>📚</div>
+        <Link to={`/book/${book.id}`} className="book-image-link" aria-label={`查看《${book.title}》详情`}>
+          {book.cover_url && <img
+            src={book.cover_url}
+            alt={`《${book.title}》封面`}
+            loading="lazy"
+            width="320"
+            height="420"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling.style.display = 'grid';
+            }}
+          />}
+          <span className="book-cover-fallback" style={{ display: book.cover_url ? 'none' : 'grid' }}><StoreIcon name="brand" size={34} /></span>
+        </Link>
         {outOfStock && <div className="out-of-stock">缺货</div>}
-        {hasDiscount && <div className="discount-badge">{book.discount}% OFF</div>}
+        {hasDiscount && <div className="discount-badge">省 {book.discount}%</div>}
         
         {/* 收藏按钮 */}
         <button 
           className={`favorite-btn ${isFavorited ? 'favorited' : ''} ${favoriteLoading ? 'loading' : ''}`}
           onClick={handleFavoriteClick}
           disabled={favoriteLoading}
+          aria-label={isFavorited ? `取消收藏《${book.title}》` : `收藏《${book.title}》`}
+          aria-pressed={isFavorited}
         >
-          {isFavorited ? '❤️' : '🤍'}
+          <StoreIcon name="heart" size={18} />
         </button>
       </div>
       
       <div className="book-info">
-        <div className="book-title">{book.title}</div>
+        <Link to={`/book/${book.id}`} className="book-title">{book.title}</Link>
         <p className="book-author">{book.author}</p>
         <p className="book-type">{book.type}</p>
         
@@ -129,11 +132,12 @@ const BookCard = ({ book }) => {
           onClick={handleAddToCart}
           disabled={outOfStock}
         >
-          {outOfStock ? '暂时缺货' : '🛒 加入购物车'}
+          {!outOfStock && <StoreIcon name="cart" size={17} />}
+          {outOfStock ? '暂时缺货' : '加入购物车'}
         </button>
       </div>
-    </div>
+    </article>
   );
 };
 
-export default BookCard; 
+export default BookCard;

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import adminApi from '../services/adminApi';
 import { DemoNotice, ErrorState, LoadingState, PageHeading, StatusBadge, Table, formatDate, formatMoney } from '../components/AdminUI';
+import AdminIcon from '../components/AdminIcon';
 
 const dayLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '今天'];
 
@@ -28,13 +29,13 @@ const DashboardPage = () => {
 
   return (
     <div className="admin-page">
-      <PageHeading eyebrow="Overview" title="早上好，欢迎回来" description="这里汇总了书城今天最值得关注的数据。" />
+      <PageHeading eyebrow="Daily Briefing" title="今日运营概览" description="聚合销售、库存、用户与订单状态，快速掌握书城运行情况。" />
       <DemoNotice show={state.isDemo} message={state.warning} />
       <section className="admin-stats">
-        <article className="admin-stat-card"><span>图书总数</span><strong>{data.book_count || 0}</strong><small>当前收录图书</small></article>
-        <article className="admin-stat-card" style={{ '--stat-color': '#34c759' }}><span>销售收入</span><strong>{formatMoney(data.revenue)}</strong><small>已支付订单合计</small></article>
-        <article className="admin-stat-card" style={{ '--stat-color': '#af52de' }}><span>注册用户</span><strong>{data.user_count || 0}</strong><small>累计用户数量</small></article>
-        <article className="admin-stat-card" style={{ '--stat-color': '#ff9f0a' }}><span>待处理事项</span><strong>{(data.low_stock_count || 0) + (data.pending_order_count || 0)}</strong><small>{data.low_stock_count || 0} 本低库存 · {data.pending_order_count || 0} 个待支付</small></article>
+        <article className="admin-stat-card"><div className="admin-stat-top"><span>图书总数</span><i><AdminIcon name="books" size={18} /></i></div><strong>{data.book_count || 0}</strong><small>当前收录图书</small></article>
+        <article className="admin-stat-card" style={{ '--stat-color': '#2f7356' }}><div className="admin-stat-top"><span>销售收入</span><i><AdminIcon name="revenue" size={18} /></i></div><strong>{formatMoney(data.revenue)}</strong><small>已支付订单合计</small></article>
+        <article className="admin-stat-card" style={{ '--stat-color': '#6d6659' }}><div className="admin-stat-top"><span>注册用户</span><i><AdminIcon name="users" size={18} /></i></div><strong>{data.user_count || 0}</strong><small>累计用户数量</small></article>
+        <article className="admin-stat-card" style={{ '--stat-color': '#a96835' }}><div className="admin-stat-top"><span>待处理事项</span><i><AdminIcon name="alert" size={18} /></i></div><strong>{(data.low_stock_count || 0) + (data.pending_order_count || 0)}</strong><small>{data.low_stock_count || 0} 本低库存 · {data.pending_order_count || 0} 个待支付</small></article>
       </section>
       <section className="admin-dashboard-grid">
         <article className="admin-panel">

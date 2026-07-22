@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import AdminIcon from './AdminIcon';
 
 export const PageHeading = ({ eyebrow, title, description, action }) => (
@@ -23,7 +23,7 @@ export const DemoNotice = ({ show, message }) => show ? (
 export const SearchField = ({ value, onChange, placeholder = '搜索' }) => (
   <label className="admin-search-field">
     <AdminIcon name="search" size={18} />
-    <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+    <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} aria-label={placeholder} />
   </label>
 );
 
@@ -48,11 +48,11 @@ export const LoadingState = () => (
 );
 
 export const EmptyState = ({ title = '暂无数据', description = '调整筛选条件后再试试。' }) => (
-  <div className="admin-state admin-empty-state"><div>⌁</div><h3>{title}</h3><p>{description}</p></div>
+  <div className="admin-state admin-empty-state"><div><AdminIcon name="inventory" size={28} /></div><h3>{title}</h3><p>{description}</p></div>
 );
 
 export const ErrorState = ({ message = '管理接口暂时不可用，请稍后重试。' }) => (
-  <div className="admin-state admin-empty-state"><div>!</div><h3>数据加载失败</h3><p>{message}</p></div>
+  <div className="admin-state admin-empty-state"><div><AdminIcon name="alert" size={28} /></div><h3>数据加载失败</h3><p>{message}</p></div>
 );
 
 export const Table = ({ columns, rows, rowKey = 'id' }) => (
@@ -68,14 +68,54 @@ export const Table = ({ columns, rows, rowKey = 'id' }) => (
   </div>
 );
 
-export const Modal = ({ title, description, children, onClose }) => (
-  <div className="admin-modal-backdrop" role="presentation" onMouseDown={onClose}>
-    <section className="admin-modal" role="dialog" aria-modal="true" aria-label={title} onMouseDown={(event) => event.stopPropagation()}>
-      <header><div><h2>{title}</h2>{description && <p>{description}</p>}</div><button className="admin-icon-button" onClick={onClose} aria-label="关闭"><AdminIcon name="close" /></button></header>
-      {children}
-    </section>
-  </div>
-);
+export const Modal = ({ title, description, children, onClose }) => {
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const titleId = useId();
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement;
+    const modal = modalRef.current;
+    const firstControl = modal?.querySelector('input, select, textarea') || modal?.querySelector('button');
+    (firstControl || modal)?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onCloseRef.current();
+      if (event.key === 'Tab' && modal) {
+        const controls = [...modal.querySelectorAll('button, input, select, textarea, [href], [tabindex]:not([tabindex="-1"])')]
+          .filter((element) => !element.disabled && element.getAttribute('aria-hidden') !== 'true');
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocusRef.current?.focus?.();
+    };
+  }, []);
+
+  return (
+    <div className="admin-modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <section ref={modalRef} tabIndex="-1" className="admin-modal" role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(event) => event.stopPropagation()}>
+        <header><div><h2 id={titleId}>{title}</h2>{description && <p>{description}</p>}</div><button className="admin-icon-button" onClick={onClose} aria-label="关闭"><AdminIcon name="close" /></button></header>
+        {children}
+      </section>
+    </div>
+  );
+};
 
 export const Field = ({ label, children, hint }) => (
   <label className="admin-form-field"><span>{label}</span>{children}{hint && <small>{hint}</small>}</label>

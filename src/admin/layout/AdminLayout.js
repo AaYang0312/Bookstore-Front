@@ -23,8 +23,8 @@ const AdminLayout = () => {
     <div className="admin-shell">
       <aside className={`admin-sidebar ${menuOpen ? 'is-open' : ''}`}>
         <Link to="/admin" className="admin-brand" onClick={() => setMenuOpen(false)}>
-          <span className="admin-brand-mark">B</span>
-          <span><strong>博学书城</strong><small>管理后台</small></span>
+          <span className="admin-brand-mark"><AdminIcon name="store" size={20} /></span>
+          <span><strong>博学书城</strong><small>运营管理中心</small></span>
         </Link>
         <nav className="admin-nav" aria-label="后台导航">
           <span className="admin-nav-label">工作台</span>
@@ -35,8 +35,8 @@ const AdminLayout = () => {
           ))}
         </nav>
         <div className="admin-sidebar-footer">
-          <Link to="/">← 返回商城</Link>
-          <span>Bookstore Console · v1.0</span>
+          <Link to="/"><AdminIcon name="back" size={16} />返回商城</Link>
+          <span>BO XUE CONSOLE · 2026</span>
         </div>
       </aside>
       {menuOpen && <button className="admin-sidebar-overlay" onClick={() => setMenuOpen(false)} aria-label="关闭导航" />}
@@ -44,7 +44,7 @@ const AdminLayout = () => {
         <header className="admin-topbar">
           <div className="admin-topbar-left">
             <button className="admin-menu-button" onClick={() => setMenuOpen(true)} aria-label="打开导航"><AdminIcon name="menu" /></button>
-            <span>{current?.label || '管理后台'}</span>
+            <span className="admin-topbar-context"><small>运营管理</small><strong>{current?.label || '管理后台'}</strong></span>
           </div>
           <div className="admin-account">
             <span className="admin-account-avatar">{(user?.username || '管').slice(0, 1).toUpperCase()}</span>
