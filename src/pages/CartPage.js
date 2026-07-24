@@ -4,6 +4,7 @@ import { useCart } from '../contexts/CartContext';
 import { useUser } from '../contexts/UserContext';
 import StoreIcon from '../components/StoreIcon';
 import { API_BASE } from '../config/api';
+import { createClientRequestId } from '../utils/clientRequestId';
 import './CartPage.css';
 
 const CartPage = () => {
@@ -38,7 +39,7 @@ const CartPage = () => {
     setCheckoutError('');
 
     if (!idempotencyKeyRef.current) {
-      idempotencyKeyRef.current = window.crypto.randomUUID();
+      idempotencyKeyRef.current = createClientRequestId();
     }
 
     try {

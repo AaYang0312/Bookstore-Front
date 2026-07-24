@@ -97,8 +97,8 @@ const Header = () => {
 
           <nav className="store-nav" aria-label="商城主导航">
             <NavLink to="/" end>首页</NavLink>
-            <a href="/#books">精选</a>
-            <a href="/#categories">分类</a>
+            <a href={`${process.env.PUBLIC_URL || ''}/#books`}>精选</a>
+            <a href={`${process.env.PUBLIC_URL || ''}/#categories`}>分类</a>
             <NavLink to="/favorites">收藏</NavLink>
           </nav>
           
