@@ -47,7 +47,7 @@ services:
       BOOKSTORE_REDIS_DB: 0
       TZ: Asia/Shanghai
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "${BACKEND_BIND_HOST:-127.0.0.1}:${BACKEND_PORT:-8080}:8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -66,7 +66,7 @@ services:
       BOOKSTORE_API_BASE_URL: http://bookstore-backend:8080/api/v1
       BOOKSTORE_ADMIN_BASE_URL: http://bookstore-backend:8080/api/v1/admin
     ports:
-      - "${AGENT_PORT:-8000}:8000"
+      - "${AGENT_BIND_HOST:-127.0.0.1}:${AGENT_PORT:-8000}:8000"
     depends_on:
       bookstore-backend:
         condition: service_healthy

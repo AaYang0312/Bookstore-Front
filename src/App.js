@@ -47,7 +47,7 @@ function App() {
     <CartProvider>
         <CartAnimationProvider>
           <FavoriteProvider>
-            <Router>
+            <Router basename={process.env.PUBLIC_URL || '/'}>
               <div className="App">
                 <Routes>
                   <Route element={<StoreLayout />}>
