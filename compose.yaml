@@ -31,6 +31,119 @@ services:
       retries: 10
     restart: unless-stopped
 
+  kafka:
+    image: apache/kafka:3.9.0
+    environment:
+      # KRaft 单节点（无 ZooKeeper）
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      CLUSTER_ID: "5L6g3nShT-eMCtK--X86sw"
+      # 双监听器：29092 供 compose 网络内服务使用，9092 供宿主机本地开发使用
+      KAFKA_LISTENERS: PLAINTEXT://:29092,CONTROLLER://:9093,PLAINTEXT_HOST://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # topic 由后端启动时显式创建
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    ports:
+      - "${KAFKA_BIND_HOST:-127.0.0.1}:${KAFKA_PORT:-9092}:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  minio:
+    # 说明：Docker Hub 已对官方 minio/minio 镜像开启登录拉取限制（匿名返回 denied），
+    # 这里使用可匿名拉取的 bitnami 镜像；若本机已 docker login，可改回
+    # image: minio/minio:latest 并恢复 command: ["server", "/data", "--console-address", ":9001"]
+    # 与 volume 挂载 /data。
+    image: bitnamilegacy/minio:latest
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - bookstore-minio-data:/bitnami/minio/data
+    ports:
+      - "${MINIO_BIND_HOST:-127.0.0.1}:${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_BIND_HOST:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # ============ Milvus 向量数据库（standalone：etcd + 专用 minio + milvus） ============
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.18
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    volumes:
+      - bookstore-etcd-data:/etcd
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  milvus-minio:
+    # Milvus 专用对象存储（与业务 MinIO 隔离），镜像选择理由同上方 minio 服务注释
+    image: bitnamilegacy/minio:latest
+    environment:
+      MINIO_ROOT_USER: ${MILVUS_MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MILVUS_MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - bookstore-milvus-minio-data:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  milvus:
+    image: milvusdb/milvus:v2.5.14
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: milvus-minio:9000
+      MINIO_ACCESS_KEY_ID: ${MILVUS_MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_ACCESS_KEY: ${MILVUS_MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - bookstore-milvus-data:/var/lib/milvus
+    ports:
+      - "${MILVUS_BIND_HOST:-127.0.0.1}:${MILVUS_PORT:-19530}:19530"
+      - "${MILVUS_BIND_HOST:-127.0.0.1}:${MILVUS_MANAGE_PORT:-9091}:9091"
+    depends_on:
+      etcd:
+        condition: service_healthy
+      milvus-minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    restart: unless-stopped
+
   bookstore-backend:
     build:
       context: ../Bookstore_Backend
@@ -45,6 +158,17 @@ services:
       BOOKSTORE_REDIS_HOST: redis
       BOOKSTORE_REDIS_PORT: 6379
       BOOKSTORE_REDIS_DB: 0
+      BOOKSTORE_KAFKA_BROKERS: kafka:29092
+      BOOKSTORE_KAFKA_TOPIC: order-create
+      BOOKSTORE_KAFKA_GROUP_ID: order-service
+      BOOKSTORE_MINIO_ENDPOINT: minio:9000
+      BOOKSTORE_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      BOOKSTORE_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      BOOKSTORE_MINIO_BUCKET: bookstore
+      # 返回给浏览器的图片访问地址（宿主机端口映射）
+      BOOKSTORE_MINIO_PUBLIC_BASE_URL: ${BOOKSTORE_MINIO_PUBLIC_BASE_URL:-http://localhost:9000}
+      # Agent 向量库增量同步用的内部只读接口共享密钥（为空则该接口禁用）
+      BOOKSTORE_INTERNAL_SYNC_SECRET: ${INTERNAL_SYNC_SECRET:-}
       TZ: Asia/Shanghai
     ports:
       - "${BACKEND_BIND_HOST:-127.0.0.1}:${BACKEND_PORT:-8080}:8080"
@@ -52,6 +176,10 @@ services:
       mysql:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     restart: unless-stopped
 
@@ -65,10 +193,23 @@ services:
       TAVILY_API_KEY: ${TAVILY_API_KEY:-tvly-change-me}
       BOOKSTORE_API_BASE_URL: http://bookstore-backend:8080/api/v1
       BOOKSTORE_ADMIN_BASE_URL: http://bookstore-backend:8080/api/v1/admin
+      # RAG / 记忆 / 个性化（不配置时自动降级，仅保留原有三工具行为）
+      MILVUS_URI: http://milvus:19530
+      REDIS_URL: redis://redis:6379/1
+      EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
+      INTERNAL_SYNC_SECRET: ${INTERNAL_SYNC_SECRET:-}
+      BOOKSTORE_INTERNAL_SYNC_SECRET: ${INTERNAL_SYNC_SECRET:-}
     ports:
       - "${AGENT_BIND_HOST:-127.0.0.1}:${AGENT_PORT:-8000}:8000"
     depends_on:
       bookstore-backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      milvus:
         condition: service_healthy
     restart: unless-stopped
 
@@ -91,3 +232,7 @@ services:
 volumes:
   bookstore-mysql-data:
   bookstore-redis-data:
+  bookstore-minio-data:
+  bookstore-etcd-data:
+  bookstore-milvus-minio-data:
+  bookstore-milvus-data:
