@@ -72,6 +72,24 @@ const fallback = async (real, demo) => {
   }
 };
 
+// 文件上传使用 FormData，不能由 request 统一设置 Content-Type（需保留 boundary）
+const uploadRequest = async (path, file, type) => {
+  const token = localStorage.getItem('token');
+  const formData = new FormData();
+  formData.append('type', type);
+  formData.append('file', file);
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload.code !== 0) {
+    throw new Error(payload.message || `上传失败（${response.status}）`);
+  }
+  return payload.data;
+};
+
 const normalizeList = (value, key) => {
   if (Array.isArray(value)) return value;
   return value?.[key] || value?.items || value?.list || [];
@@ -178,6 +196,11 @@ const adminApi = {
   setCarouselStatus: (id, is_active) => fallback(
     () => request(`/admin/carousel/${id}/status`, { method: 'PATCH', body: JSON.stringify({ is_active }) }),
     () => demoUpdate('carousel', id, { is_active })
+  ),
+  // 上传图片到 MinIO：type 为 covers（书籍封面）/ carousel（轮播图）
+  uploadImage: (file, type = 'covers') => fallback(
+    () => uploadRequest('/admin/upload/image', file, type),
+    () => ({ url: URL.createObjectURL(file) })
   )
 };
 

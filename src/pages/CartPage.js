@@ -17,6 +17,10 @@ const CartPage = () => {
   const checkoutInFlightRef = useRef(false);
   const idempotencyKeyRef = useRef(null);
 
+  // 异步下单：订单进入消息队列后，轮询处理结果
+  const ORDER_RESULT_POLL_INTERVAL = 1500;
+  const ORDER_RESULT_POLL_TIMEOUT = 15000;
+
   const handleQuantityChange = (bookId, newQuantity) => {
     if (newQuantity < 1) {
       removeFromCart(bookId);
@@ -26,6 +30,20 @@ const CartPage = () => {
   };
 
   const totalPrice = getTotalPrice();
+
+  const fetchOrderCreateResult = async (idempotencyKey, token) => {
+    const response = await fetch(
+      `${API_BASE}/order/create/result?idempotency_key=${encodeURIComponent(idempotencyKey)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const data = await response.json();
+    if (data.code !== 0) {
+      throw new Error(data.message || '查询订单结果失败');
+    }
+    return data.data;
+  };
+
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const handleCheckout = async () => {
     if (!user) {
@@ -65,8 +83,28 @@ const CartPage = () => {
         throw new Error(data.message || '创建订单失败');
       }
 
-      clearCart();
-      navigate(`/payment/${data.data.id}`);
+      let result = data.data;
+      // 订单已进入消息队列：轮询异步处理结果
+      if (result.status !== 'created') {
+        const deadline = Date.now() + ORDER_RESULT_POLL_TIMEOUT;
+        while (Date.now() < deadline) {
+          await wait(ORDER_RESULT_POLL_INTERVAL);
+          result = await fetchOrderCreateResult(idempotencyKeyRef.current, token);
+          if (result.status !== 'pending') break;
+        }
+      }
+
+      if (result.status === 'created' && result.order_id) {
+        clearCart();
+        navigate(`/payment/${result.order_id}`);
+        return;
+      }
+      if (result.status === 'failed') {
+        // 业务失败（如库存不足）：换新的幂等键，便于用户调整后重新下单
+        idempotencyKeyRef.current = null;
+        throw new Error(result.message || '创建订单失败');
+      }
+      throw new Error('订单仍在处理中，请稍后到订单列表查看');
     } catch (error) {
       setCheckoutError(error.message || '创建订单失败，请稍后重试');
     } finally {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import adminApi from '../services/adminApi';
 import { DemoNotice, EmptyState, ErrorState, Field, LoadingState, Modal, PageHeading, PrimaryButton, SearchField, SecondaryButton, StatusBadge, Table, formatMoney } from '../components/AdminUI';
 
@@ -9,6 +9,8 @@ const BookManagePage = () => {
   const [state, setState] = useState({ loading: true, rows: [], isDemo: false, warning: '', error: '' });
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverFileRef = useRef(null);
 
   useEffect(() => {
     setState((current) => ({ ...current, loading: true }));
@@ -38,6 +40,20 @@ const BookManagePage = () => {
       setSaving(false);
     }
   };
+  const handleCoverUpload = async (event) => {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    setCoverUploading(true);
+    try {
+      const result = await adminApi.uploadImage(file, 'covers');
+      setEditing((current) => ({ ...current, cover_url: result.data.url }));
+    } catch (error) {
+      setState((current) => ({ ...current, error: error.message }));
+    } finally {
+      setCoverUploading(false);
+    }
+  };
   const columns = [
     { key: 'title', label: '图书', render: (row) => <div className="admin-book-cell"><span className="admin-book-cover">{row.cover_url ? <img src={row.cover_url} alt="" /> : '书'}</span><div className="admin-cell-primary"><strong>{row.title}</strong><small>{row.author || '未知作者'} · {row.isbn || '无 ISBN'}</small></div></div> },
     { key: 'category_name', label: '分类', render: (row) => row.category_name || row.type || '未分类' },
@@ -62,7 +78,7 @@ const BookManagePage = () => {
         <Field label="价格"><input className="admin-input" type="number" min="0" required value={editing.price} onChange={(e) => setEditing({ ...editing, price: e.target.value })}/></Field>
         <Field label="库存"><input className="admin-input" type="number" min="0" required value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: e.target.value })}/></Field>
         <Field label="上架状态"><select className="admin-select" value={editing.status} onChange={(e) => setEditing({ ...editing, status: e.target.value })}><option value="1">立即上架</option><option value="0">暂不上架</option></select></Field>
-        <Field label="封面地址"><input className="admin-input" value={editing.cover_url || ''} onChange={(e) => setEditing({ ...editing, cover_url: e.target.value })}/></Field>
+        <Field label="封面地址"><div className="admin-upload-row"><input className="admin-input" placeholder="粘贴图片链接或上传文件" value={editing.cover_url || ''} onChange={(e) => setEditing({ ...editing, cover_url: e.target.value })}/><SecondaryButton onClick={() => coverFileRef.current && coverFileRef.current.click()}>{coverUploading ? '上传中…' : '上传封面'}</SecondaryButton><input hidden type="file" accept="image/jpeg,image/png,image/webp,image/gif" ref={coverFileRef} onChange={handleCoverUpload}/></div>{editing.cover_url ? <img className="admin-upload-preview" src={editing.cover_url} alt="封面预览"/> : null}</Field>
       </div><div className="admin-form-actions"><SecondaryButton onClick={() => setEditing(null)}>取消</SecondaryButton><PrimaryButton type="submit" icon={null} disabled={saving}>{saving ? '保存中…' : '保存图书'}</PrimaryButton></div></form></Modal>}
     </div>
   );

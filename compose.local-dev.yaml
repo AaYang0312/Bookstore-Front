@@ -1,0 +1,11 @@
+# 本地开发用 override：把 mysql/redis 端口映射到宿主机，便于在宿主机直接
+# `go run ./cmd/bookstore-manager` 调试后端（后端 conf/config.yaml 默认连 127.0.0.1）。
+# 用法：docker compose -f compose.yaml -f compose.local-dev.yaml up -d mysql redis kafka minio
+# 注意：若宿主机已占用 3306/6379，请先停掉本地服务或改映射端口。
+services:
+  mysql:
+    ports:
+      - "127.0.0.1:3306:3306"
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"

@@ -290,6 +290,25 @@
 
 .order-history-page .order-payment-meta .store-icon { color: var(--color-accent); }
 
+.order-history-page .order-cancel-btn {
+  padding: 8px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 620;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.order-history-page .order-cancel-btn:hover:not(:disabled) {
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
+.order-history-page .order-cancel-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .order-history-page .order-total {
   display: flex;
   align-items: baseline;

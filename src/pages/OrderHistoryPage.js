@@ -17,6 +17,7 @@ const OrderHistoryPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cancellingId, setCancellingId] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -49,6 +50,30 @@ const OrderHistoryPage = () => {
       setLoading(false);
     }
   }, []);
+
+  const cancelOrder = useCallback(async (orderId) => {
+    try {
+      setCancellingId(orderId);
+      setError('');
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/order/${orderId}/cancel`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.code !== 0) {
+        setError(data.message || '取消订单失败');
+        return;
+      }
+      await fetchOrders();
+    } catch {
+      setError('网络错误，请稍后重试');
+    } finally {
+      setCancellingId(null);
+    }
+  }, [fetchOrders]);
 
   useEffect(() => {
     if (userLoading) return;
@@ -179,6 +204,16 @@ const OrderHistoryPage = () => {
                       <StoreIcon name={order.is_paid ? 'check' : 'clock'} size={17} />
                       <span>{order.is_paid && order.payment_time ? `支付于 ${formatDate(order.payment_time)}` : '等待完成支付'}</span>
                     </div>
+                    {order.status === 0 && (
+                      <button
+                        type="button"
+                        className="order-cancel-btn"
+                        onClick={() => cancelOrder(order.id)}
+                        disabled={cancellingId === order.id}
+                      >
+                        {cancellingId === order.id ? '取消中…' : '取消订单'}
+                      </button>
+                    )}
                     <div className="order-total">
                       <span>订单合计</span>
                       <strong>¥{formatPrice(order.total_amount)}</strong>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import adminApi from '../services/adminApi';
 import AdminIcon from '../components/AdminIcon';
 import { DemoNotice, EmptyState, ErrorState, Field, LoadingState, Modal, PageHeading, PrimaryButton, SecondaryButton, StatusBadge } from '../components/AdminUI';
@@ -8,6 +8,8 @@ const blankItem = { title: '', description: '', image_url: '', link_url: '/', so
 const CarouselManagePage = () => {
   const [state, setState] = useState({ loading: true, rows: [], isDemo: false, warning: '', error: '' });
   const [editing, setEditing] = useState(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const imageFileRef = useRef(null);
   useEffect(() => {
     adminApi.carousel()
       .then((result) => setState({ loading: false, rows: result.data, isDemo: result.isDemo, warning: result.warning || '', error: '' }))
@@ -19,6 +21,20 @@ const CarouselManagePage = () => {
       setState((current) => ({ ...current, error: '', isDemo: current.isDemo || result.isDemo, rows: current.rows.map((item) => item.id === row.id ? { ...item, ...result.data } : item) }));
     } catch (error) {
       setState((current) => ({ ...current, error: error.message }));
+    }
+  };
+  const handleImageUpload = async (event) => {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    setImageUploading(true);
+    try {
+      const result = await adminApi.uploadImage(file, 'carousel');
+      setEditing((current) => ({ ...current, image_url: result.data.url }));
+    } catch (error) {
+      setState((current) => ({ ...current, error: error.message }));
+    } finally {
+      setImageUploading(false);
     }
   };
   const submit = async (event) => {
@@ -45,7 +61,7 @@ const CarouselManagePage = () => {
       <Field label="标题"><input className="admin-input" required value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })}/></Field>
       <Field label="排序"><input className="admin-input" type="number" min="0" value={editing.sort_order} onChange={(e) => setEditing({ ...editing, sort_order: e.target.value })}/></Field>
       <label className="admin-form-field is-wide"><span>描述</span><textarea className="admin-textarea" value={editing.description || ''} onChange={(e) => setEditing({ ...editing, description: e.target.value })}/></label>
-      <label className="admin-form-field is-wide"><span>图片地址</span><input className="admin-input" value={editing.image_url || ''} onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}/></label>
+      <label className="admin-form-field is-wide"><span>图片地址</span><div className="admin-upload-row"><input className="admin-input" placeholder="粘贴图片链接或上传文件" value={editing.image_url || ''} onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}/><SecondaryButton onClick={() => imageFileRef.current && imageFileRef.current.click()}>{imageUploading ? '上传中…' : '上传图片'}</SecondaryButton><input hidden type="file" accept="image/jpeg,image/png,image/webp,image/gif" ref={imageFileRef} onChange={handleImageUpload}/></div>{editing.image_url ? <img className="admin-upload-preview" src={editing.image_url} alt="图片预览"/> : null}</label>
       <Field label="跳转地址"><input className="admin-input" value={editing.link_url || ''} onChange={(e) => setEditing({ ...editing, link_url: e.target.value })}/></Field>
       <Field label="展示状态"><select className="admin-select" value={String(editing.is_active)} onChange={(e) => setEditing({ ...editing, is_active: e.target.value === 'true' })}><option value="true">展示</option><option value="false">停用</option></select></Field>
     </div><div className="admin-form-actions"><SecondaryButton onClick={() => setEditing(null)}>取消</SecondaryButton><PrimaryButton type="submit" icon={null}>保存轮播图</PrimaryButton></div></form></Modal>}
