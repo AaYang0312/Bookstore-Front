@@ -13,7 +13,8 @@ const OrderConfirmCard = ({ confirm, disabled, onConfirmDecision }) => {
   if (!summary) return null;
 
   const isOrder = summary.type === 'create_order';
-  const settled = resolved || disabled;
+  // 仅用户点过按钮才算落定。流式回复尚未结束时只禁用按钮，不能显示成「已取消」。
+  const settled = Boolean(resolved);
   const order = summary.order;
 
   return (
@@ -64,6 +65,7 @@ const OrderConfirmCard = ({ confirm, disabled, onConfirmDecision }) => {
             <button
               type="button"
               className="agent-confirm-accept"
+              disabled={disabled}
               onClick={() => onConfirmDecision('confirmed')}
             >
               {isOrder ? '确认下单' : '确认取消订单'}
@@ -71,6 +73,7 @@ const OrderConfirmCard = ({ confirm, disabled, onConfirmDecision }) => {
             <button
               type="button"
               className="agent-confirm-decline"
+              disabled={disabled}
               onClick={() => onConfirmDecision('rejected')}
             >
               再想想

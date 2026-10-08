@@ -19,47 +19,60 @@ const readStream = async (response, handlers) => {
   const decoder = new TextDecoder();
   let buffer = '';
 
+  const dispatchEvent = (event) => {
+    const lines = event.split('\n');
+    const eventName = lines.find((line) => line.startsWith('event:'))?.slice(6).trim() || '';
+    const dataLine = lines.find((line) => line.startsWith('data:'));
+    if (!dataLine) return;
+
+    const raw = dataLine.slice(5).trim();
+    if (!raw || raw === '[DONE]') return;
+
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      payload = null;
+    }
+
+    // SSE 事件按 event 名分发（delta / confirm_request / done / error …）；
+    // 无 event 行时仍认 action=confirm_required，或同时带 operation_id 与 summary 的载荷
+    const isConfirm = eventName === 'confirm_request'
+      || payload?.action === 'confirm_required'
+      || Boolean(payload?.operation_id && payload?.summary);
+    if (eventName === 'delta' || payload?.type === 'text' || payload?.delta) {
+      onText(payload?.content || payload?.delta || '');
+    } else if (isConfirm) {
+      onConfirm({
+        operationId: payload?.operation_id || payload?.operationId,
+        summary: payload?.summary
+      });
+    } else if (eventName === 'error') {
+      onError(payload?.message || '助手服务返回错误，请稍后重试。');
+    } else if (eventName === 'done') {
+      // 完整回答已通过 delta 流式输出，无额外处理
+    } else if (payload && (payload.type === 'books' || payload.books)) {
+      onData(payload);
+    }
+  };
+
   while (true) {
     const { value, done } = await reader.read();
     buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+    // 归一化 CRLF，但保留块尾单独的 \r，避免它和下一包的 \n 被提前拆成事件边界
+    buffer = buffer.replace(/\r\n/g, '\n');
+    const heldCR = !done && buffer.endsWith('\r') ? '\r' : '';
+    if (heldCR) buffer = buffer.slice(0, -1);
+    if (done) buffer = buffer.replace(/\r/g, '\n');
+
     const events = buffer.split('\n\n');
-    buffer = events.pop() || '';
+    buffer = (events.pop() || '') + heldCR;
 
-    events.forEach((event) => {
-      const lines = event.split('\n');
-      const eventName = lines.find((line) => line.startsWith('event:'))?.slice(6).trim() || '';
-      const dataLine = lines.find((line) => line.startsWith('data:'));
-      if (!dataLine) return;
-
-      const raw = dataLine.slice(5).trim();
-      if (!raw || raw === '[DONE]') return;
-
-      let payload;
-      try {
-        payload = JSON.parse(raw);
-      } catch {
-        payload = null;
-      }
-
-      // SSE 事件按 event 名分发（delta / confirm_request / done / error …）；
-      // 无 event 行的旧格式按 payload 形状识别，保持兼容
-      if (eventName === 'delta' || payload?.type === 'text' || payload?.delta) {
-        onText(payload?.content || payload?.delta || '');
-      } else if (eventName === 'confirm_request' || payload?.action === 'confirm_required') {
-        onConfirm({
-          operationId: payload?.operation_id || payload?.operationId,
-          summary: payload?.summary
-        });
-      } else if (eventName === 'error') {
-        onError(payload?.message || '助手服务返回错误，请稍后重试。');
-      } else if (eventName === 'done') {
-        // 完整回答已通过 delta 流式输出，无额外处理
-      } else if (payload && (payload.type === 'books' || payload.books)) {
-        onData(payload);
-      }
-    });
-
-    if (done) break;
+    events.forEach(dispatchEvent);
+    if (done) {
+      if (buffer.trim()) dispatchEvent(buffer);
+      break;
+    }
   }
 };
 

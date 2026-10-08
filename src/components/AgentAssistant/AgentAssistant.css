@@ -270,6 +270,7 @@
 }
 
 .agent-confirm-actions button:hover { transform: translateY(-1px); }
+.agent-confirm-actions button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 
 .agent-confirm-accept {
   border: 0;

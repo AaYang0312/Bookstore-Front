@@ -218,7 +218,7 @@ services:
       context: .
       args:
         REACT_APP_API_BASE_URL: /api/v1
-        REACT_APP_AGENT_API_URL: /api/v1/agent/chat
+        REACT_APP_AGENT_API_URL: /api/v1/agent/chat/stream
         REACT_APP_ADMIN_DEMO_MODE: ${REACT_APP_ADMIN_DEMO_MODE:-false}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
