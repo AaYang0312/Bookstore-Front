@@ -1,15 +1,17 @@
 import React from 'react';
 import BookRecommendationCard from './BookRecommendationCard';
+import OrderConfirmCard from './OrderConfirmCard';
 import AgentMarkdown from './AgentMarkdown';
 import StoreIcon from '../StoreIcon';
 
-const AgentMessage = ({ message, onOpenBook, onAddToCart }) => {
+const AgentMessage = ({ message, onOpenBook, onAddToCart, isStreaming, onConfirmDecision }) => {
   const isUser = message.role === 'user';
   const hasBooks = message.books?.length > 0;
+  const hasConfirm = Boolean(message.confirm?.summary);
 
   // 流式请求开始时会先插入一条空的 assistant 占位消息。
   // 这条消息由 AgentPanel 的加载动画代为展示，避免重复头像。
-  if (!isUser && !message.content && !hasBooks) return null;
+  if (!isUser && !message.content && !hasBooks && !hasConfirm) return null;
 
   return (
     <div className={`agent-message-row ${isUser ? 'is-user' : 'is-assistant'}`}>
@@ -33,6 +35,13 @@ const AgentMessage = ({ message, onOpenBook, onAddToCart }) => {
               />
             ))}
           </div>
+        )}
+        {hasConfirm && (
+          <OrderConfirmCard
+            confirm={message.confirm}
+            disabled={isStreaming || Boolean(message.confirm.resolved)}
+            onConfirmDecision={(decision) => onConfirmDecision(message, decision)}
+          />
         )}
       </div>
     </div>

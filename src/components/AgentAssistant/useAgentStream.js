@@ -11,7 +11,8 @@ const getValidationDetail = (payload) => {
   }).filter(Boolean).join('；');
 };
 
-const readStream = async (response, onText, onData) => {
+const readStream = async (response, handlers) => {
+  const { onText, onData, onConfirm, onError } = handlers;
   const reader = response.body?.getReader();
   if (!reader) return;
 
@@ -25,18 +26,36 @@ const readStream = async (response, onText, onData) => {
     buffer = events.pop() || '';
 
     events.forEach((event) => {
-      const dataLine = event.split('\n').find((line) => line.startsWith('data:'));
+      const lines = event.split('\n');
+      const eventName = lines.find((line) => line.startsWith('event:'))?.slice(6).trim() || '';
+      const dataLine = lines.find((line) => line.startsWith('data:'));
       if (!dataLine) return;
 
       const raw = dataLine.slice(5).trim();
       if (!raw || raw === '[DONE]') return;
 
+      let payload;
       try {
-        const payload = JSON.parse(raw);
-        if (payload.type === 'text' || payload.delta) onText(payload.content || payload.delta || '');
-        if (payload.type === 'books' || payload.books) onData(payload);
+        payload = JSON.parse(raw);
       } catch {
-        onText(raw);
+        payload = null;
+      }
+
+      // SSE 事件按 event 名分发（delta / confirm_request / done / error …）；
+      // 无 event 行的旧格式按 payload 形状识别，保持兼容
+      if (eventName === 'delta' || payload?.type === 'text' || payload?.delta) {
+        onText(payload?.content || payload?.delta || '');
+      } else if (eventName === 'confirm_request' || payload?.action === 'confirm_required') {
+        onConfirm({
+          operationId: payload?.operation_id || payload?.operationId,
+          summary: payload?.summary
+        });
+      } else if (eventName === 'error') {
+        onError(payload?.message || '助手服务返回错误，请稍后重试。');
+      } else if (eventName === 'done') {
+        // 完整回答已通过 delta 流式输出，无额外处理
+      } else if (payload && (payload.type === 'books' || payload.books)) {
+        onData(payload);
       }
     });
 
@@ -48,7 +67,9 @@ export default function useAgentStream() {
   const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef(null);
 
-  const sendMessage = useCallback(async ({ message, conversationId, history, onText, onData }) => {
+  const sendMessage = useCallback(async ({
+    message, conversationId, history, onText, onData, onConfirm, onError
+  }) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -99,7 +120,12 @@ export default function useAgentStream() {
 
       const contentType = response.headers.get('content-type') || '';
       if (contentType.includes('text/event-stream')) {
-        await readStream(response, onText, onData);
+        await readStream(response, {
+          onText: onText || (() => {}),
+          onData: onData || (() => {}),
+          onConfirm: onConfirm || (() => {}),
+          onError: onError || (() => {})
+        });
       } else {
         const payload = await response.json();
         onText(payload.message || payload.data?.message || '');

@@ -50,7 +50,7 @@ Go 后端和 Agent 默认只绑定本机 `127.0.0.1:8080` 与
 ```bash
 PUBLIC_URL=/bookstore \
 REACT_APP_API_BASE_URL=/bookstore-api/v1 \
-REACT_APP_AGENT_API_URL=/bookstore-api/v1/agent/chat \
+REACT_APP_AGENT_API_URL=/bookstore-api/v1/agent/chat/stream \
 REACT_APP_ADMIN_DEMO_MODE=false \
 npm run build
 

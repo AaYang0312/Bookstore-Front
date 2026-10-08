@@ -4,7 +4,7 @@ import StoreIcon from '../StoreIcon';
 
 const suggestions = ['推荐几本入门书', '看看最近的新书', '找 50 元以内的书'];
 
-const AgentPanel = ({ messages, isStreaming, onClose, onSend, onStop, onOpenBook, onAddToCart }) => {
+const AgentPanel = ({ messages, isStreaming, onClose, onSend, onStop, onOpenBook, onAddToCart, onConfirmDecision }) => {
   const [input, setInput] = useState('');
   const listRef = useRef(null);
   const inputRef = useRef(null);
@@ -42,8 +42,10 @@ const AgentPanel = ({ messages, isStreaming, onClose, onSend, onStop, onOpenBook
           <AgentMessage
             key={message.id}
             message={message}
+            isStreaming={isStreaming}
             onOpenBook={onOpenBook}
             onAddToCart={onAddToCart}
+            onConfirmDecision={onConfirmDecision}
           />
         ))}
         {isStreaming && messages[messages.length - 1]?.content === '' && (

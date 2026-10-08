@@ -176,3 +176,117 @@
   .agent-markdown th, .agent-markdown td { border-color: rgba(255,255,255,.09); }
   .agent-markdown tbody tr:nth-child(even) { background: rgba(255,255,255,.035); }
 }
+
+/* ---- 写操作确认卡片（下单 / 取消订单） ---- */
+.agent-confirm-card {
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--agent-soft);
+}
+
+.agent-confirm-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--agent-text);
+}
+
+.agent-confirm-badge {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--agent-accent);
+}
+
+.agent-confirm-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--agent-text);
+}
+
+.agent-confirm-items li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.agent-confirm-item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-confirm-item-price { flex-shrink: 0; color: var(--agent-muted); }
+
+.agent-confirm-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-border);
+  font-size: 13px;
+  color: var(--agent-muted);
+}
+
+.agent-confirm-total strong { font-size: 15px; color: var(--agent-accent); }
+
+.agent-confirm-order { font-size: 13px; color: var(--agent-text); line-height: 1.7; }
+.agent-confirm-order-no { margin: 0; font-weight: 600; }
+.agent-confirm-order-status, .agent-confirm-order-items { margin: 0; color: var(--agent-muted); }
+
+.agent-confirm-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--agent-muted);
+}
+
+.agent-confirm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.agent-confirm-actions button {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .15s ease, opacity .15s ease;
+}
+
+.agent-confirm-actions button:hover { transform: translateY(-1px); }
+
+.agent-confirm-accept {
+  border: 0;
+  color: #fff;
+  background: var(--agent-accent);
+}
+
+.agent-confirm-decline {
+  border: 1px solid var(--color-border);
+  color: var(--agent-muted);
+  background: transparent;
+}
+
+.agent-confirm-card.is-settled { opacity: .75; }
+.agent-confirm-settled {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  color: var(--agent-muted);
+}
